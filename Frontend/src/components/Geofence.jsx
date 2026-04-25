@@ -7,6 +7,9 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
+import Style from 'ol/style/Style';
+import Fill from 'ol/style/Fill';
+import Stroke from 'ol/style/Stroke';
 import { fromLonLat, toLonLat } from 'ol/proj';
 
 import VectorLayer from 'ol/layer/Vector';
@@ -26,7 +29,7 @@ const Geofence = () => {
 
     const [drawingPoints, setDrawingPoints] = useState([]); // solo per disegno attivo
     const [isDrawing, setIsDrawing] = useState(false);
-    const isDrawingRef = useRef(false);
+    const isDrawingRef = useRef(false);     // Ne ho bisogno per evitare che non si modifichi lo stato interno al on.map a casua del useEffect che parte solo all'inizio
 
     useEffect(() => {
         savedSourceRef.current.clear();     // Per evitare che react monti e smonti il componente all'inizio più volte e che duplichi i geofence disegnati
@@ -50,11 +53,13 @@ const Geofence = () => {
                 // geofence salvati
                 new VectorLayer({
                     source: savedSourceRef.current,
+                    style: savedStyle
                 }),
 
                 // draw temporaneo
                 new VectorLayer({
                     source: drawSourceRef.current,
+                    style: drawStyle
                 })
             ],
             view: new View({
@@ -86,7 +91,7 @@ const Geofence = () => {
     // Disegna SOLO preview (non salva)
     const drawPolygon = (coords) => {
 
-        drawSourceRef.current.clear(); // 👈 SOLO layer draw
+        drawSourceRef.current.clear(); // SOLO layer draw
 
         if (coords.length < 2) return;
 
@@ -151,7 +156,7 @@ const Geofence = () => {
 
         // pulisci SOLO draw layer
         drawSourceRef.current.clear();
-        
+
         // debug
         console.log(drawSourceRef.current.getFeatures())
         console.log(savedSourceRef.current.getFeatures())
@@ -162,46 +167,119 @@ const Geofence = () => {
         drawSourceRef.current.clear();
     };
 
-    return (
-        <div>
-            <h3>Mappa Interattiva</h3>
+    const savedStyle = new Style({
+        stroke: new Stroke({
+            color: 'rgba(0, 123, 255, 0.9)', // blu
+            width: 2,
+        }),
+        fill: new Fill({
+            color: 'rgba(0, 123, 255, 0.15)',
+        }),
+    });
 
+    const drawStyle = new Style({
+        stroke: new Stroke({
+            color: 'rgba(255, 193, 7, 1)', // giallo/arancio
+            width: 2,
+            lineDash: [8, 6],
+        }),
+        fill: new Fill({
+            color: 'rgba(255, 193, 7, 0.2)',
+        }),
+    });
+
+    return (
+        <div className={`p-3 min-vh-100 m-2 rounded ${isDrawing ? 'bg-dark border border-3 border-warning' : 'bg-dark border border-3 border-primary'}`}>
+
+            <h3 className="mb-3 text-light">
+                Mappa Interattiva
+            </h3>
+
+            {/* MODALITÀ */}
+            <div className="mt-2 text-center mb-3">
+                <span
+                    className={`badge fs-6 px-3 py-2 ${isDrawing
+                        ? 'border border-warning text-warning'
+                        : 'border border-primary text-primary'
+                        }`}
+                >
+                    {isDrawing
+                        ? 'MODALITÀ: DISEGNO GEOFENCE'
+                        : 'MODALITÀ: VISUALIZZAZIONE'}
+                </span>
+            </div>
+
+            {/* MAPPA */}
             <div
                 ref={mapElement}
+                className="border border-secondary rounded shadow-sm mb-3"
                 style={{
                     height: '500px',
                     width: '100%',
-                    border: '1px solid #ccc'
                 }}
             />
 
-            <div className="mt-2 d-flex justify-content-center">
+            {/* BOTTONI */}
+            <div className="d-flex justify-content-center">
                 <ButtonGroup className="gap-2">
 
-                    <Button
-                        variant="dark"
-                        onClick={() => setIsDrawing(true)}
-                    >
-                        Aggiungi Geofence
-                    </Button>
+                    {/* ATTIVA SOLO SE NON STO DISEGNANDO */}
+                    {!isDrawing && (
+                        <Button
+                            variant={"outline-primary"}
+                            className="shadow-sm hover-shadow"
+                            onClick={() => setIsDrawing(true)}
+                        >
+                            Aggiungi Geofence
+                        </Button>
+                    )}
 
-                    <Button
-                        variant="dark"
-                        onClick={saveGeofence}
-                    >
-                        Salva Geofence
-                    </Button>
+                    {/* CANCELLA SEMPRE DISPONIBILE SOLO IN VIEW MODE */}
+                    {!isDrawing && (
+                        <Button
+                            variant="outline-danger"
+                            className="shadow-sm hover-shadow"
+                            onClick={deleteGeofence}
+                        >
+                            Cancella Geofence
+                        </Button>
+                    )}
 
-                    <Button
-                        variant="danger"
-                        onClick={deleteGeofence}
-                    >
-                        Cancella Geofence
-                    </Button>
+                    {/* MODALITÀ DRAW */}
+                    {isDrawing && (
+                        <>
+                            <Button
+                                variant="outline-warning"
+                                className="shadow-sm hover-shadow"
+                                onClick={saveGeofence}
+                            >
+                                Salva Geofence
+                            </Button>
+
+                            <Button
+                                variant="outline-danger"
+                                className="shadow-sm hover-shadow"
+                                onClick={deleteGeofence}
+                            >
+                                Cancella
+                            </Button>
+
+                            <Button
+                                variant="outline-light"
+                                className="shadow-sm hover-fill"
+                                onClick={() => {
+                                    setIsDrawing(false);
+                                    setDrawingPoints([]);
+                                    drawSourceRef.current.clear();
+                                }}
+                            >
+                                Esci
+                            </Button>
+                        </>
+                    )}
 
                 </ButtonGroup>
             </div>
-
         </div>
     );
 };
