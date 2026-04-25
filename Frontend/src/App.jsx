@@ -15,7 +15,7 @@ function InnerHome() {
   return (
     <>
       <Navbar />
-      <Container fluid className="text-center">
+      <Container fluid className="p-3 text-center">
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/map" element={<Geofence />} />

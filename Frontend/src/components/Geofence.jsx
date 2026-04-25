@@ -31,6 +31,10 @@ const Geofence = () => {
     const [isDrawing, setIsDrawing] = useState(false);
     const isDrawingRef = useRef(false);     // Ne ho bisogno per evitare che non si modifichi lo stato interno al on.map a casua del useEffect che parte solo all'inizio
 
+
+    const [geofenceVisible, setGeofenceVisible] = useState(true);
+
+
     useEffect(() => {
         savedSourceRef.current.clear();     // Per evitare che react monti e smonti il componente all'inizio più volte e che duplichi i geofence disegnati
         initialGeojson.forEach(addFeatureToMap);
@@ -189,96 +193,133 @@ const Geofence = () => {
     });
 
     return (
-        <div className={`p-3 min-vh-100 m-2 rounded ${isDrawing ? 'bg-dark border border-3 border-warning' : 'bg-dark border border-3 border-primary'}`}>
+        <div className={`d-flex min-vh-100 ${isDrawing ? 'bg-dark border border-3 border-warning' : 'bg-dark border border-3 border-primary'}`}>
 
-            <h3 className="mb-3 text-light">
-                Mappa Interattiva
-            </h3>
+            {/* SIDEBAR */}
+            <div className="p-3 border-end border-secondary" style={{ width: '280px' }}>
 
-            {/* MODALITÀ */}
-            <div className="mt-2 text-center mb-3">
-                <span
-                    className={`badge fs-6 px-3 py-2 ${isDrawing
-                        ? 'border border-warning text-warning'
-                        : 'border border-primary text-primary'
-                        }`}
+                <h5 className="text-light mb-4">
+                    STRUMENTI
+                </h5>
+
+                {/* TOGGLE LAYER GEOJSON */}
+                <Button
+                    variant={geofenceVisible ? "primary" : "outline-primary"}
+                    className="w-100 mb-2"
+                    onClick={() => {
+                        const layer = mapRef.current.getLayers().getArray()[1]; // saved layer
+
+                        const next = !geofenceVisible;
+
+                        setGeofenceVisible(next);
+                        layer.setVisible(next);
+                        setDrawingPoints([]);
+                        setIsDrawing(false);
+                        drawSourceRef.current.clear();
+                    }}
                 >
-                    {isDrawing
-                        ? 'MODALITÀ: DISEGNO GEOFENCE'
-                        : 'MODALITÀ: VISUALIZZAZIONE'}
-                </span>
-            </div>
+                    {geofenceVisible ? "Nascondi Geofence" : "Visualizza Geofence"}
+                </Button>
 
-            {/* MAPPA */}
-            <div
-                ref={mapElement}
-                className="border border-secondary rounded shadow-sm mb-3"
-                style={{
-                    height: '500px',
-                    width: '100%',
-                }}
-            />
-
-            {/* BOTTONI */}
-            <div className="d-flex justify-content-center">
-                <ButtonGroup className="gap-2">
-
-                    {/* ATTIVA SOLO SE NON STO DISEGNANDO */}
-                    {!isDrawing && (
+                {/* BOTTONI CONDIZIONALI */}
+                {!isDrawing && geofenceVisible && (
+                    <>
                         <Button
-                            variant={"outline-primary"}
-                            className="shadow-sm hover-shadow"
+                            variant="outline-primary"
+                            className="w-100 mb-2"
                             onClick={() => setIsDrawing(true)}
                         >
                             Aggiungi Geofence
                         </Button>
-                    )}
 
-                    {/* CANCELLA SEMPRE DISPONIBILE SOLO IN VIEW MODE */}
-                    {!isDrawing && (
                         <Button
                             variant="outline-danger"
-                            className="shadow-sm hover-shadow"
+                            className="w-100 mb-2"
                             onClick={deleteGeofence}
                         >
                             Cancella Geofence
                         </Button>
-                    )}
+                    </>
+                )}
 
-                    {/* MODALITÀ DRAW */}
-                    {isDrawing && (
-                        <>
-                            <Button
-                                variant="outline-warning"
-                                className="shadow-sm hover-shadow"
-                                onClick={saveGeofence}
-                            >
-                                Salva Geofence
-                            </Button>
+                {isDrawing && geofenceVisible && (
+                    <>
+                        <Button
+                            variant="outline-warning"
+                            className="w-100 mb-2"
+                            onClick={saveGeofence}
+                        >
+                            Salva Geofence
+                        </Button>
 
-                            <Button
-                                variant="outline-danger"
-                                className="shadow-sm hover-shadow"
-                                onClick={deleteGeofence}
-                            >
-                                Cancella
-                            </Button>
+                        <Button
+                            variant="outline-danger"
+                            className="w-100 mb-2"
+                            onClick={deleteGeofence}
+                        >
+                            Cancella
+                        </Button>
 
-                            <Button
-                                variant="outline-light"
-                                className="shadow-sm hover-fill"
-                                onClick={() => {
-                                    setIsDrawing(false);
-                                    setDrawingPoints([]);
-                                    drawSourceRef.current.clear();
-                                }}
-                            >
-                                Esci
-                            </Button>
-                        </>
-                    )}
+                        <Button
+                            variant="outline-light"
+                            className="w-100 mb-2"
+                            onClick={() => {
+                                setIsDrawing(false);
+                                setDrawingPoints([]);
+                                drawSourceRef.current.clear();
+                            }}
+                        >
+                            Esci
+                        </Button>
+                    </>
+                )}
 
-                </ButtonGroup>
+                <hr className="border-secondary" />
+
+                {/* RADIO FUTURI */}
+                <Button variant="outline-light" className="w-100 mb-2">
+                    Visualizza Temperatura
+                </Button>
+
+                <Button variant="outline-light" className="w-100 mb-2">
+                    Visualizza Umidità
+                </Button>
+
+            </div>
+
+            {/* MAPPA */}
+            <div className="flex-grow-1 p-2">
+
+                <h3 className="mb-3 text-light">
+                    Mappa Interattiva
+                </h3>
+
+                {/* MODALITÀ */}
+                <div className="mt-2 text-center mb-3">
+                    <span
+                        className={`badge fs-6 px-3 py-2 ${isDrawing
+                            ? 'border border-warning text-warning'
+                            : 'border border-primary text-primary'
+                            }`}
+                    >
+                        {isDrawing
+                            ? 'MODALITÀ: DISEGNO GEOFENCE'
+                            : geofenceVisible
+                                ? 'MODALITÀ: VISUALIZZAZIONE GEOFENCE'
+                                : '_'}
+                    </span>
+                </div>
+
+                {/* MAPPA */}
+                <div
+                    ref={mapElement}
+                    className="border border-secondary rounded shadow-sm"
+                    style={{
+                        height: '600px',
+                        width: '100%',
+                    }}
+                />
+
             </div>
         </div>
     );
