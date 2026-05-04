@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: gis_db
+    environment:
+      - POSTGRES_USER=user_admin
+      - POSTGRES_PASSWORD=password_segreta
+      - POSTGRES_DB=mio_gis_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
