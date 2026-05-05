@@ -38,6 +38,7 @@ const Geofence = () => {
     const selectRef = useRef(null);     // diventerà l'oggetto select
 
     const [geofenceVisible, setGeofenceVisible] = useState(true);
+    const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
     useEffect(() => {
         axios.get("http://localhost:3000/geofences")
@@ -360,11 +361,46 @@ const Geofence = () => {
     });
 
     return (
-        <div className="d-flex min-vh-100 bg-dark">
+        <div className="d-flex min-vh-100 bg-dark position-relative" style={{ overflow: 'hidden' }}>
+
+            {/* TOGGLE SIDEBAR DESTRA */}
+            {geofenceVisible && (
+                <button
+                    onClick={() => setRightPanelOpen(prev => !prev)}
+                    className="btn btn-outline-light"
+                    style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: 20,
+                        zIndex: 1000
+                    }}
+                >
+                    ☰
+                </button>
+            )}
+
+            {/* OVERLAY */}
+            <div
+                onClick={() => setRightPanelOpen(false)}
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.3)',
+                    zIndex: 998,
+                    opacity: rightPanelOpen ? 1 : 0,
+                    pointerEvents: rightPanelOpen ? 'auto' : 'none',
+                    transition: 'opacity 0.35s ease',
+                }}
+            />
 
             {/* SIDEBAR SINISTRA */}
-            <div className="p-3 border-end border-secondary" style={{ width: '280px' }}>
-
+            <div
+                className="p-3 border-end border-secondary"
+                style={{ width: '280px', zIndex: 2 }}
+            >
                 <h5 className="text-light mb-4">STRUMENTI</h5>
 
                 {/* TOGGLE GEOFENCE */}
@@ -373,12 +409,9 @@ const Geofence = () => {
                     className="w-100 mb-2"
                     onClick={() => {
                         const layer = mapRef.current.getLayers().getArray()[1];
-
                         const next = !geofenceVisible;
-
                         setGeofenceVisible(next);
                         layer.setVisible(next);
-
                         setDrawingPoints([]);
                         setIsDrawing(false);
                         drawSourceRef.current.clear();
@@ -450,8 +483,7 @@ const Geofence = () => {
             </div>
 
             {/* MAPPA */}
-            <div className="flex-grow-1 p-2">
-
+            <div className="flex-grow-1 p-2 position-relative">
                 <h3 className="mb-3 text-light">Mappa Interattiva</h3>
 
                 <div className="text-center mb-3">
@@ -465,7 +497,7 @@ const Geofence = () => {
                             ? 'MODALITÀ: DISEGNO'
                             : geofenceVisible
                                 ? 'MODALITÀ: VISUALIZZAZIONE'
-                                : 'MAPPA NASCOSTA'}
+                                : 'MAPPA VUOTA'}
                     </span>
                 </div>
 
@@ -476,10 +508,23 @@ const Geofence = () => {
                 />
             </div>
 
-            {/* SIDEBAR DESTRA (LISTA GEOFENCE) */}
-            {geofenceVisible && (
-                <div className="p-3 border-start border-secondary" style={{ width: '300px' }}>
-
+            {/* SIDEBAR DESTRA (DRAWER) */}
+            <div
+                className="p-3 border-start border-secondary"
+                style={{
+                    width: '300px',
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    height: '100%',
+                    background: '#111',
+                    zIndex: 999,
+                    transform: rightPanelOpen ? 'translateX(0%)' : 'translateX(100%)',
+                    transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                    willChange: 'transform'
+                }}
+            >
+                <div style={{ marginTop: '20px' }}>
                     <h5 className="text-light mb-3">Geofences</h5>
 
                     {geofences.length === 0 && (
@@ -495,7 +540,7 @@ const Geofence = () => {
                         />
                     ))}
                 </div>
-            )}
+            </div>
 
         </div>
     );
