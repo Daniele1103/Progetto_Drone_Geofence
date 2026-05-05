@@ -39,6 +39,8 @@ const Geofence = () => {
 
     const [geofenceVisible, setGeofenceVisible] = useState(true);
     const [rightPanelOpen, setRightPanelOpen] = useState(false);
+    const [geofenceName, setGeofenceName] = useState('');
+    const [showNameInput, setShowNameInput] = useState(false);
 
     useEffect(() => {
         axios.get("http://localhost:3000/geofences")
@@ -177,8 +179,7 @@ const Geofence = () => {
     };
 
     // Salvataggio GeoJSON
-    const saveGeofence = () => {
-
+    const saveGeofence = (name = 'Zona senza nome') => {
         if (drawingPoints.length < 3) {
             alert("Servono almeno 3 punti");
             return;
@@ -193,7 +194,7 @@ const Geofence = () => {
                 coordinates: [polygonCoords],
             },
             properties: {
-                name: "Zona A"
+                name: name
             }
         };
 
@@ -445,7 +446,7 @@ const Geofence = () => {
                         <Button
                             variant="outline-warning"
                             className="w-100 mb-2"
-                            onClick={saveGeofence}
+                            onClick={() => saveGeofence()}
                         >
                             Salva Geofence
                         </Button>
@@ -464,7 +465,11 @@ const Geofence = () => {
                         <Button
                             variant="outline-light"
                             className="w-100 mb-2"
-                            onClick={() => setIsDrawing(false)}
+                            onClick={() => {
+                                setIsDrawing(false)
+                                setDrawingPoints([]);
+                                drawSourceRef.current.clear();
+                            }}
                         >
                             Esci
                         </Button>
