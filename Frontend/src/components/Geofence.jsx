@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button, ButtonGroup } from 'react-bootstrap';
 import initialGeojson from "../assets/Geojson.json"
 import axios from "axios";
+import GeofenceCard from "./GeofenceCard"
 
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -11,6 +12,8 @@ import OSM from 'ol/source/OSM';
 import Style from 'ol/style/Style';
 import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
+import Select from 'ol/interaction/Select';
+
 import { fromLonLat, toLonLat } from 'ol/proj';
 
 import VectorLayer from 'ol/layer/Vector';
@@ -30,8 +33,9 @@ const Geofence = () => {
 
     const [drawingPoints, setDrawingPoints] = useState([]); // solo per disegno attivo
     const [isDrawing, setIsDrawing] = useState(false);
-    const isDrawingRef = useRef(false);     // Ne ho bisogno per evitare che non si modifichi lo stato interno al on.map a casua del useEffect che parte solo all'inizio
 
+    const isDrawingRef = useRef(false);     // Ne ho bisogno per evitare che non si modifichi lo stato interno al on.map a casua del useEffect che parte solo all'inizio
+    const selectRef = useRef(null);     // diventerà l'oggetto select
 
     const [geofenceVisible, setGeofenceVisible] = useState(true);
 
@@ -82,6 +86,33 @@ const Geofence = () => {
                 zoom: 16,
             }),
         });
+
+        const select = new Select({
+            layers: [map.getLayers().getArray()[1]], // solo layer geofence
+            multi: true,
+            style: selectStyle
+        });
+
+        // Si attiva quando seleziono un geofence oppure lo deseleziono quando clicco altro
+        select.on('select', (e) => {
+            const feature = e.selected[0];
+
+            if (!feature) return;
+
+            const extent = feature.getGeometry().getExtent();
+
+            mapRef.current.getView().fit(extent, {
+                duration: 800,
+                padding: [80, 80, 80, 80],
+                maxZoom: 17
+            });
+            console.log("Selezionate:", e.selected);
+
+        });
+
+        map.addInteraction(select);
+
+        selectRef.current = select;     // mi serve per usare il select quando clicco la card geofence e settare il select 
 
         map.on('click', (evt) => {
 
@@ -136,7 +167,12 @@ const Geofence = () => {
             geometry: polygon,
         });
 
+        //console.log(item.id)
+        feature.set('id', item.id);
+
         savedSourceRef.current.addFeature(feature);
+
+        //console.log(savedSourceRef.current.getFeatures())
     };
 
     // Salvataggio GeoJSON
@@ -162,8 +198,6 @@ const Geofence = () => {
 
         axios.post("http://localhost:3000/geofences", geofenceGeoJSON)
             .then((res) => {
-                console.log("Salvato nel DB:", res.data);
-
                 const data = res.data
 
                 addFeatureToMap(data)
@@ -181,6 +215,9 @@ const Geofence = () => {
                 setDrawingPoints([]);
                 setIsDrawing(false);
                 drawSourceRef.current.clear();
+
+                console.log("Salvato nel DB:", res.data);
+
             })
             .catch((err) => {
                 console.error("Errore salvataggio geofence:", err);
@@ -191,10 +228,104 @@ const Geofence = () => {
         //console.log(savedSourceRef.current.getFeatures())
     };
 
-    const deleteGeofence = () => {
-        console.log("wowoow",geofences)
+    const deleteGeofence = (id = null) => {
+        let featuresToDelete = [];
+
+        console.log(id)
+        if (id) {
+            // caso: delete da card
+            const feature = savedSourceRef.current
+                .getFeatures()
+                .find(f => f.get('id') === id);
+
+            if (!feature) return;
+
+            featuresToDelete = [feature];
+
+        } else {
+            // caso: delete da selezione mappa (OpenLayers)
+            featuresToDelete = selectRef.current
+                .getFeatures()
+                .getArray();
+
+            if (!featuresToDelete.length) return;
+        }
+
+        featuresToDelete.forEach((feature) => {
+            const featureId = feature.get('id');
+
+            axios.delete(`http://localhost:3000/geofences/${featureId}`)
+                .then((res) => {
+                    // rimuovi dalla mappa
+                    savedSourceRef.current.removeFeature(feature);
+
+                    // rimuovi dallo stato React
+                    setGeofences(prev => prev.filter(g => g.id !== featureId));
+
+                    console.log(res.data.message);
+                })
+                .catch(err => {
+                    console.error("Errore delete geofence:", err);
+                });
+        });
+
+        // deseleziono le feature selezionate
+        if (selectRef.current) {
+            selectRef.current.getFeatures().clear();
+        }
+    };
+
+    const deleteDrawGeofence = () => {
         setDrawingPoints([]);
         drawSourceRef.current.clear();
+
+    };
+
+    const focusGeofence = (id) => {
+        const feature = savedSourceRef.current
+            .getFeatures()
+            .find(f => f.get('id') === id);
+
+        if (!feature) return;
+
+        // 2. aggiorni OpenLayers
+        // selectRef è l’istanza di Select di OpenLayers (l’interazione che gestisce la selezione sulla mappa)
+        //
+        // Internamente Select mantiene una "collection" di feature selezionate (getFeatures()).
+        // Quando l’utente clicca sulla mappa, OpenLayers fa hit detection (trova le feature sotto il click)
+        // e aggiorna automaticamente questa collection (aggiungendo o sostituendo le feature selezionate),
+        // attivando anche l’evento "select".
+        //
+        // Quando invece faccio:
+        // selectRef.current.getFeatures().push(feature)
+        //
+        // sto forzando manualmente la selezione della feature, simulando il comportamento del click,
+        // cioè aggiungendola alla lista delle feature selezionate e facendo scattare lo style di selezione.
+
+        const collection = selectRef.current.getFeatures();         // ottengo tutte le feature selezionate, collection è una lista di oggetti Feature
+
+        collection.clear();        // deseleziona altri
+        collection.push(feature);  // seleziona questo
+
+        // 3. zoom (più “largo”, simile alla vista iniziale)
+        const extent = feature.getGeometry().getExtent();
+
+        // espande l'extent per zoom meno ravvicinato
+        const buffer = 200; // metri circa (dipende dal CRS della mappa)
+        const expandedExtent = [
+            extent[0] - buffer,
+            extent[1] - buffer,
+            extent[2] + buffer,
+            extent[3] + buffer,
+        ];
+
+        mapRef.current.getView().fit(expandedExtent, {
+            duration: 800,
+            padding: [80, 80, 80, 80],
+            maxZoom: 17 // evita zoom troppo vicino
+        });
+
+        console.log("Selezionate: ", collection.getArray())
     };
 
     const savedStyle = new Style({
@@ -218,27 +349,36 @@ const Geofence = () => {
         }),
     });
 
-    return (
-        <div className={`d-flex min-vh-100 ${isDrawing ? 'bg-dark border border-3 border-warning' : 'bg-dark border border-3 border-primary'}`}>
+    const selectStyle = new Style({
+        stroke: new Stroke({
+            color: 'red',
+            width: 3,
+        }),
+        fill: new Fill({
+            color: 'rgba(255, 0, 0, 0.2)',
+        }),
+    });
 
-            {/* SIDEBAR */}
+    return (
+        <div className="d-flex min-vh-100 bg-dark">
+
+            {/* SIDEBAR SINISTRA */}
             <div className="p-3 border-end border-secondary" style={{ width: '280px' }}>
 
-                <h5 className="text-light mb-4">
-                    STRUMENTI
-                </h5>
+                <h5 className="text-light mb-4">STRUMENTI</h5>
 
-                {/* TOGGLE LAYER GEOJSON */}
+                {/* TOGGLE GEOFENCE */}
                 <Button
                     variant={geofenceVisible ? "primary" : "outline-primary"}
                     className="w-100 mb-2"
                     onClick={() => {
-                        const layer = mapRef.current.getLayers().getArray()[1]; // saved layer
+                        const layer = mapRef.current.getLayers().getArray()[1];
 
                         const next = !geofenceVisible;
 
                         setGeofenceVisible(next);
                         layer.setVisible(next);
+
                         setDrawingPoints([]);
                         setIsDrawing(false);
                         drawSourceRef.current.clear();
@@ -247,7 +387,6 @@ const Geofence = () => {
                     {geofenceVisible ? "Nascondi Geofence" : "Visualizza Geofence"}
                 </Button>
 
-                {/* BOTTONI CONDIZIONALI */}
                 {!isDrawing && geofenceVisible && (
                     <>
                         <Button
@@ -261,9 +400,9 @@ const Geofence = () => {
                         <Button
                             variant="outline-danger"
                             className="w-100 mb-2"
-                            onClick={deleteGeofence}
+                            onClick={() => deleteGeofence()}
                         >
-                            Cancella Geofence
+                            Cancella selezionati
                         </Button>
                     </>
                 )}
@@ -281,19 +420,18 @@ const Geofence = () => {
                         <Button
                             variant="outline-danger"
                             className="w-100 mb-2"
-                            onClick={deleteGeofence}
+                            onClick={() => {
+                                setDrawingPoints([]);
+                                drawSourceRef.current.clear();
+                            }}
                         >
-                            Cancella
+                            Cancella disegno
                         </Button>
 
                         <Button
                             variant="outline-light"
                             className="w-100 mb-2"
-                            onClick={() => {
-                                setIsDrawing(false);
-                                setDrawingPoints([]);
-                                drawSourceRef.current.clear();
-                            }}
+                            onClick={() => setIsDrawing(false)}
                         >
                             Esci
                         </Button>
@@ -302,7 +440,6 @@ const Geofence = () => {
 
                 <hr className="border-secondary" />
 
-                {/* RADIO FUTURI */}
                 <Button variant="outline-light" className="w-100 mb-2">
                     Visualizza Temperatura
                 </Button>
@@ -310,18 +447,14 @@ const Geofence = () => {
                 <Button variant="outline-light" className="w-100 mb-2">
                     Visualizza Umidità
                 </Button>
-
             </div>
 
             {/* MAPPA */}
             <div className="flex-grow-1 p-2">
 
-                <h3 className="mb-3 text-light">
-                    Mappa Interattiva
-                </h3>
+                <h3 className="mb-3 text-light">Mappa Interattiva</h3>
 
-                {/* MODALITÀ */}
-                <div className="mt-2 text-center mb-3">
+                <div className="text-center mb-3">
                     <span
                         className={`badge fs-6 px-3 py-2 ${isDrawing
                             ? 'border border-warning text-warning'
@@ -329,24 +462,41 @@ const Geofence = () => {
                             }`}
                     >
                         {isDrawing
-                            ? 'MODALITÀ: DISEGNO GEOFENCE'
+                            ? 'MODALITÀ: DISEGNO'
                             : geofenceVisible
-                                ? 'MODALITÀ: VISUALIZZAZIONE GEOFENCE'
-                                : '_'}
+                                ? 'MODALITÀ: VISUALIZZAZIONE'
+                                : 'MAPPA NASCOSTA'}
                     </span>
                 </div>
 
-                {/* MAPPA */}
                 <div
                     ref={mapElement}
                     className="border border-secondary rounded shadow-sm"
-                    style={{
-                        height: '600px',
-                        width: '100%',
-                    }}
+                    style={{ height: '600px', width: '100%' }}
                 />
-
             </div>
+
+            {/* SIDEBAR DESTRA (LISTA GEOFENCE) */}
+            {geofenceVisible && (
+                <div className="p-3 border-start border-secondary" style={{ width: '300px' }}>
+
+                    <h5 className="text-light mb-3">Geofences</h5>
+
+                    {geofences.length === 0 && (
+                        <p className="text-secondary">Nessun geofence</p>
+                    )}
+
+                    {geofences.map((g) => (
+                        <GeofenceCard
+                            key={g.id}
+                            geofence={g}
+                            onSelect={() => focusGeofence(g.id)}
+                            onDelete={() => deleteGeofence(g.id)}
+                        />
+                    ))}
+                </div>
+            )}
+
         </div>
     );
 };

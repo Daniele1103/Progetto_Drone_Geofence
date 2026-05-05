@@ -41,3 +41,30 @@ export const getGeofences = async (req, res) => {
         res.status(500).json({ error: 'Errore recupero geofence' });
     }
 };
+
+export const deleteGeofence = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const query = `
+            DELETE FROM geofences
+            WHERE id = $1
+            RETURNING id;
+        `;
+
+        const result = await pool.query(query, [id]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Geofence non trovato' });
+        }
+
+        res.json({
+            message: 'Geofence eliminato con successo',
+            id: result.rows[0].id
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Errore eliminazione geofence' });
+    }
+};
