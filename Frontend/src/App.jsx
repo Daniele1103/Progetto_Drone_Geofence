@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Navbar from './components/Navbar';
 import Geofence from './components/Geofence';
 import { Container } from 'react-bootstrap';
+import axios from "axios";
 
 const Welcome = () => (
   <div className="welcome-container">

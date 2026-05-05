@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, ButtonGroup } from 'react-bootstrap';
 import initialGeojson from "../assets/Geojson.json"
+import axios from "axios";
 
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -25,7 +26,7 @@ const Geofence = () => {
     const savedSourceRef = useRef(new VectorSource());      // In questo modo divido i geofence da quelli che sto disegnando così da evitare di dover cancellare ogni volta che diegno ilr esto per non aggiungere feature inutili al layer
     const drawSourceRef = useRef(new VectorSource());
 
-    const [geojson, setGeojson] = useState([]);
+    const [geofences, setGeofences] = useState([]);
 
     const [drawingPoints, setDrawingPoints] = useState([]); // solo per disegno attivo
     const [isDrawing, setIsDrawing] = useState(false);
@@ -34,11 +35,21 @@ const Geofence = () => {
 
     const [geofenceVisible, setGeofenceVisible] = useState(true);
 
-
     useEffect(() => {
-        savedSourceRef.current.clear();     // Per evitare che react monti e smonti il componente all'inizio più volte e che duplichi i geofence disegnati
-        initialGeojson.forEach(addFeatureToMap);
-        setGeojson(initialGeojson);
+        axios.get("http://localhost:3000/geofences")
+            .then((res) => {
+                const data = res.data;
+                //console.log(res.data)
+
+                setGeofences(data);             // Setto i geofence nello stato per averli a portat di mano
+
+                savedSourceRef.current.clear();         // Per evitare che react monti e smonti il componente all'inizio più volte e che duplichi i geofence disegnati
+
+                data.forEach(addFeatureToMap);          // Disegno subito i geofence
+            })
+            .catch((err) => {
+                console.error("Errore fetch geofences:", err);
+            });
     }, []);
 
     useEffect(() => {
@@ -115,7 +126,9 @@ const Geofence = () => {
     };
 
     const addFeatureToMap = (item) => {
-        const coords = item.geometry.coordinates[0].map(c => fromLonLat(c));
+        const geometry = JSON.parse(item.geometry);
+
+        const coords = geometry.coordinates[0].map(c => fromLonLat(c));
 
         const polygon = new Polygon([coords]);
 
@@ -136,37 +149,50 @@ const Geofence = () => {
 
         const polygonCoords = [...drawingPoints, drawingPoints[0]];
 
-        const olCoords = polygonCoords.map(c => fromLonLat(c));
-
-        const polygon = new Polygon([olCoords]);
-
-        const feature = new Feature({
-            geometry: polygon,
-        });
-
-        // aggiungi al layer persistente
-        savedSourceRef.current.addFeature(feature);
-
-        setGeojson(prev => [...prev, {
+        const geofenceGeoJSON = {
             type: "Feature",
             geometry: {
                 type: "Polygon",
                 coordinates: [polygonCoords],
             },
-        }]);
+            properties: {
+                name: "Zona A"
+            }
+        };
 
-        setDrawingPoints([]);
-        setIsDrawing(false);
+        axios.post("http://localhost:3000/geofences", geofenceGeoJSON)
+            .then((res) => {
+                console.log("Salvato nel DB:", res.data);
 
-        // pulisci SOLO draw layer
-        drawSourceRef.current.clear();
+                const data = res.data
+
+                addFeatureToMap(data)
+
+                setGeofences(prev => [
+                    ...prev,
+                    {
+                        id: res.data.id,
+                        name: res.data.name,
+                        geometry: res.data.geometry
+                    }
+                ]);
+
+                // reset UI
+                setDrawingPoints([]);
+                setIsDrawing(false);
+                drawSourceRef.current.clear();
+            })
+            .catch((err) => {
+                console.error("Errore salvataggio geofence:", err);
+            });
 
         // debug
-        console.log(drawSourceRef.current.getFeatures())
-        console.log(savedSourceRef.current.getFeatures())
+        //console.log(drawSourceRef.current.getFeatures())
+        //console.log(savedSourceRef.current.getFeatures())
     };
 
     const deleteGeofence = () => {
+        console.log("wowoow",geofences)
         setDrawingPoints([]);
         drawSourceRef.current.clear();
     };
