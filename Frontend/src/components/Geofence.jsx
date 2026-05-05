@@ -415,6 +415,8 @@ const Geofence = () => {
                         layer.setVisible(next);
                         setDrawingPoints([]);
                         setIsDrawing(false);
+                        setShowNameInput(false);
+                        setGeofenceName('');
                         drawSourceRef.current.clear();
                     }}
                 >
@@ -443,13 +445,81 @@ const Geofence = () => {
 
                 {isDrawing && geofenceVisible && (
                     <>
-                        <Button
-                            variant="outline-warning"
-                            className="w-100 mb-2"
-                            onClick={() => saveGeofence()}
-                        >
-                            Salva Geofence
-                        </Button>
+                        {!showNameInput ? (
+                            <Button
+                                variant="outline-warning"
+                                className="w-100 mb-2"
+                                onClick={() => {
+                                    if (drawingPoints.length < 3) {
+                                        alert("Servono almeno 3 punti");
+                                        return;
+                                    }
+                                    setShowNameInput(true);
+                                }}
+                            >
+                                Salva Geofence
+                            </Button>
+                        ) : (
+                            <div
+                                className="mb-2 p-2 rounded"
+                                style={{
+                                    background: 'rgba(255,193,7,0.08)',
+                                    border: '1px solid rgba(255,193,7,0.4)',
+                                }}
+                            >
+                                <label className="text-warning mb-1" style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+                                    NOME GEOFENCE
+                                </label>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    placeholder="Es. Zona magazzino..."
+                                    value={geofenceName}
+                                    onChange={(e) => setGeofenceName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            saveGeofence(geofenceName || 'Zona senza nome');
+                                            setGeofenceName('');
+                                            setShowNameInput(false);
+                                        }
+                                        if (e.key === 'Escape') {
+                                            setShowNameInput(false);
+                                            setGeofenceName('');
+                                        }
+                                    }}
+                                    className="form-control form-control-sm bg-dark text-light border-0 mb-2"
+                                    style={{
+                                        outline: 'none',
+                                        boxShadow: '0 0 0 2px rgba(255,193,7,0.5)',
+                                        borderRadius: '4px',
+                                    }}
+                                />
+                                <div className="d-flex gap-1">
+                                    <Button
+                                        variant="warning"
+                                        size="sm"
+                                        className="flex-grow-1 fw-semibold"
+                                        onClick={() => {
+                                            saveGeofence(geofenceName || 'Zona senza nome');
+                                            setGeofenceName('');
+                                            setShowNameInput(false);
+                                        }}
+                                    >
+                                        ✓ Conferma
+                                    </Button>
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            setShowNameInput(false);
+                                            setGeofenceName('');
+                                        }}
+                                    >
+                                        ✕
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         <Button
                             variant="outline-danger"
@@ -466,8 +536,10 @@ const Geofence = () => {
                             variant="outline-light"
                             className="w-100 mb-2"
                             onClick={() => {
-                                setIsDrawing(false)
+                                setIsDrawing(false);
                                 setDrawingPoints([]);
+                                setShowNameInput(false);
+                                setGeofenceName('');
                                 drawSourceRef.current.clear();
                             }}
                         >
