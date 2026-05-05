@@ -478,7 +478,11 @@ const Geofence = () => {
                                     onChange={(e) => setGeofenceName(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
-                                            saveGeofence(geofenceName || 'Zona senza nome');
+                                            if (!geofenceName.trim()) {
+                                                alert("Inserisci un nome per il geofence");
+                                                return;
+                                            }
+                                            saveGeofence(geofenceName.trim());
                                             setGeofenceName('');
                                             setShowNameInput(false);
                                         }
@@ -500,7 +504,11 @@ const Geofence = () => {
                                         size="sm"
                                         className="flex-grow-1 fw-semibold"
                                         onClick={() => {
-                                            saveGeofence(geofenceName || 'Zona senza nome');
+                                            if (!geofenceName.trim()) {
+                                                alert("Inserisci un nome per il geofence");
+                                                return;
+                                            }
+                                            saveGeofence(geofenceName.trim());
                                             setGeofenceName('');
                                             setShowNameInput(false);
                                         }}
