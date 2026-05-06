@@ -37,6 +37,7 @@ const Geofence = () => {
 
     const isDrawingRef = useRef(false);     // Ne ho bisogno per evitare che non si modifichi lo stato interno al on.map a casua del useEffect che parte solo all'inizio
     const selectRef = useRef(null);     // diventerà l'oggetto select
+    const [selectedIds, setSelectedIds] = useState([]);
 
     const [geofenceVisible, setGeofenceVisible] = useState(true);
     const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -98,8 +99,17 @@ const Geofence = () => {
         });
 
         // Si attiva quando seleziono un geofence oppure lo deseleziono quando clicco altro
-        select.on('select', (e) => {
-            const feature = e.selected[0];
+        select.on('select', () => {
+
+            const selectedFeatures = select
+                .getFeatures()
+                .getArray();
+
+            const ids = selectedFeatures.map(f => f.get('id'));
+
+            setSelectedIds(ids);            // per selezionare anche la card selezionata
+
+            const feature = selectedFeatures[0];
 
             if (!feature) return;
 
@@ -110,8 +120,6 @@ const Geofence = () => {
                 padding: [80, 80, 80, 80],
                 maxZoom: 17
             });
-            console.log("Selezionate:", e.selected);
-
         });
 
         map.addInteraction(select);
@@ -265,6 +273,8 @@ const Geofence = () => {
                     // rimuovi dallo stato React
                     setGeofences(prev => prev.filter(g => g.id !== featureId));
 
+                    setSelectedIds([])
+
                     console.log(res.data.message);
                 })
                 .catch(err => {
@@ -309,6 +319,8 @@ const Geofence = () => {
 
         collection.clear();        // deseleziona altri
         collection.push(feature);  // seleziona questo
+
+        setSelectedIds([id]);           // per selezionare anche la card selezionata
 
         // 3. zoom (più “largo”, simile alla vista iniziale)
         const extent = feature.getGeometry().getExtent();
@@ -625,6 +637,7 @@ const Geofence = () => {
                             geofence={g}
                             onSelect={() => focusGeofence(g.id)}
                             onDelete={() => deleteGeofence(g.id)}
+                            selected={selectedIds.includes(g.id)}
                         />
                     ))}
                 </div>

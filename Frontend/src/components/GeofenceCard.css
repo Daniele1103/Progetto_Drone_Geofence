@@ -10,3 +10,9 @@
         0 0 20px rgba(13, 110, 253, 0.8);
     transform: scale(1.02);
 }
+
+.selected-card {
+    background: rgba(13, 110, 253, 0.15) !important;
+    box-shadow: 0 0 12px rgba(13, 110, 253, 0.5);
+    border-width: 2px !important;
+}
