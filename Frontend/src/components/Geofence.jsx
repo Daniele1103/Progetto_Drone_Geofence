@@ -362,7 +362,7 @@ const Geofence = () => {
     });
 
     return (
-        <div className="d-flex min-vh-100 bg-dark position-relative" style={{ overflow: 'hidden' }}>
+        <div className="d-flex bg-dark position-relative" style={{ overflow: 'hidden', height: 'calc(100vh - 57px)' }}> {/* scorciatoia per rendere il container grande come tutta la pagina contando la grandezza della navbar, così da avere tutto in una sola pagina*/}
 
             {/* TOGGLE SIDEBAR DESTRA */}
             {geofenceVisible && (
@@ -373,7 +373,8 @@ const Geofence = () => {
                         position: 'absolute',
                         right: 10,
                         top: 20,
-                        zIndex: 1000
+                        zIndex: 1000,
+                        marginRight: '10px'
                     }}
                 >
                     ☰
@@ -589,7 +590,7 @@ const Geofence = () => {
                 <div
                     ref={mapElement}
                     className="border border-secondary rounded shadow-sm"
-                    style={{ height: '600px', width: '100%' }}
+                    style={{ height: '80%', width: '100%' }}
                 />
             </div>
 
@@ -606,7 +607,8 @@ const Geofence = () => {
                     zIndex: 999,
                     transform: rightPanelOpen ? 'translateX(0%)' : 'translateX(100%)',
                     transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-                    willChange: 'transform'
+                    willChange: 'transform',
+                    overflowY: 'auto',   // <-- aggiunto
                 }}
             >
                 <div style={{ marginTop: '20px' }}>
