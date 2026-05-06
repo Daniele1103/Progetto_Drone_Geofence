@@ -4,6 +4,7 @@ import { Button, ButtonGroup } from 'react-bootstrap';
 import initialGeojson from "../assets/Geojson.json"
 import axios from "axios";
 import GeofenceCard from "./GeofenceCard"
+import './Geofence.css'
 
 import Map from 'ol/Map';
 import View from 'ol/View';

@@ -1,7 +1,8 @@
+import './GeofenceCard.css';
 const GeofenceCard = ({ geofence, onSelect, onDelete }) => {
     return (
         <div
-            className="card bg-dark text-light border border-secondary mb-2"
+            className="card bg-dark text-light border border-secondary mb-2 geofence-card"
             style={{ cursor: 'pointer' }}
             onClick={onSelect}
         >
@@ -12,7 +13,7 @@ const GeofenceCard = ({ geofence, onSelect, onDelete }) => {
                 <button
                     className="btn btn-sm btn-outline-danger"
                     onClick={(e) => {
-                        e.stopPropagation();        // impedisce che il click sul bottone attivi anche onSelect
+                        e.stopPropagation();                // impedisce che il click sul bottone attivi anche onSelect
                         onDelete();
                     }}
                 >
@@ -24,4 +25,4 @@ const GeofenceCard = ({ geofence, onSelect, onDelete }) => {
     );
 };
 
-export default GeofenceCard
+export default GeofenceCard;

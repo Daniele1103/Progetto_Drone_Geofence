@@ -27,3 +27,18 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #888;
 }
+
+button,
+.btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:hover,
+.btn:hover {
+  transform: scale(1.03);
+}
+
+button:active,
+.btn:active {
+  transform: scale(0.97);
+}

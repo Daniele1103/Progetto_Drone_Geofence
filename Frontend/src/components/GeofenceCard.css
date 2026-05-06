@@ -1,0 +1,12 @@
+.geofence-card {
+    transition: all 0.15s ease;
+    border-radius: 8px;
+}
+
+.geofence-card:hover {
+    border-color: #0d6efd;
+    box-shadow:
+        0 0 0 1px #0d6efd,
+        0 0 20px rgba(13, 110, 253, 0.8);
+    transform: scale(1.02);
+}
