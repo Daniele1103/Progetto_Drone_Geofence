@@ -1,5 +1,5 @@
 import './GeofenceCard.css';
-const GeofenceCard = ({ geofence, onSelect, onDelete, selected }) => {
+const GeofenceCard = ({ geofence, onSelect, onDelete, iSselected }) => {
     return (
         <div
             className={`
@@ -9,7 +9,7 @@ const GeofenceCard = ({ geofence, onSelect, onDelete, selected }) => {
                 border
                 mb-2
                 geofence-card
-                ${selected ? 'selected-card border-primary' : 'border-secondary'}
+                ${iSselected ? 'selected-card border-primary' : 'border-secondary'}
             `}
             style={{ cursor: 'pointer' }}
             onClick={onSelect}

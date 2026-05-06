@@ -637,7 +637,7 @@ const Geofence = () => {
                             geofence={g}
                             onSelect={() => focusGeofence(g.id)}
                             onDelete={() => deleteGeofence(g.id)}
-                            selected={selectedIds.includes(g.id)}
+                            iSselected={selectedIds.includes(g.id)}       // se la carat di quel geofnce è selezionata o no
                         />
                     ))}
                 </div>
