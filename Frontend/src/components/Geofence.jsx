@@ -108,6 +108,7 @@ const Geofence = () => {
             const ids = selectedFeatures.map(f => f.get('id'));
 
             setSelectedIds(ids);            // per selezionare anche la card selezionata
+            //console.log(ids)
 
             const feature = selectedFeatures[0];
 
