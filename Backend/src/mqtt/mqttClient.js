@@ -7,7 +7,8 @@ const client = mqtt.connect(MQTT_URL);          // apre una connessione persiste
 
 const TOPICS = [
     "drone/gps",          // mi sottoscrivo ai topic che voglio (nond evono essere registrati), semplicemente riceverò soloq aundo qualcuno pubblicherà su uno di quei topic
-    "drone/temp"
+    "drone/temp",
+    "drone/hum"
 ];
 
 // connect per connettermi
@@ -31,10 +32,13 @@ client.on("message", (topic, message) => {
     try {
         const data = JSON.parse(message.toString());
 
+        /*
         console.log("MQTT message ricevuto");
         console.log("Topic:", topic);
         console.log("Data:", data);
 
+        */
+        
         handleMessage(topic, data);
 
     } catch (err) {
@@ -43,26 +47,30 @@ client.on("message", (topic, message) => {
 });
 
 client.on("error", (err) => {
-    console.error("❌ MQTT error:", err.message);
+    console.error("MQTT error:", err.message);
 });
 
 client.on("reconnect", () => {
-    console.log("🔄 MQTT reconnect...");
+    console.log("MQTT reconnect...");
 });
 
 function handleMessage(topic, data) {
     switch (topic) {
 
         case "drone/gps":
-            console.log("📍 gps drone:", data);
+            console.log("gps drone:", data);
             break;
 
         case "drone/temp":
-            console.log("🚨 temperatura geofence:", data);
+            console.log("temperatura geofence:", data);
+            break;
+
+        case "drone/hum":
+            console.log("umidità geofence:", data);
             break;
 
         default:
-            console.log("ℹ️ Topic non gestito:", topic);
+            console.log("ℹTopic non gestito:", topic);
     }
 }
 
