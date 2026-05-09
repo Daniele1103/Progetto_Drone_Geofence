@@ -5,8 +5,11 @@ import geofenceRoutes from './api/routes/geofenceRoutes.js'
 import cors from "cors";
 import "./mqtt/mqttClient.js";
 import pool from "./config/dbpg.js";
+import path from "path";
 
-dotenv.config();
+dotenv.config({
+    path: path.resolve(process.cwd(), "../.env")
+});
 
 const app = express();
 
