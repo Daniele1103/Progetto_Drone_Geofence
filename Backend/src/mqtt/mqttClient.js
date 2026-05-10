@@ -1,4 +1,9 @@
 import mqtt from "mqtt";
+import {
+    saveGps,
+    saveTemperature,
+    saveHumidity
+} from "../influx/influxClient.js";
 
 const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";
 
@@ -38,7 +43,7 @@ client.on("message", (topic, message) => {
         console.log("Data:", data);
 
         */
-        
+
         handleMessage(topic, data);
 
     } catch (err) {
@@ -55,22 +60,48 @@ client.on("reconnect", () => {
 });
 
 function handleMessage(topic, data) {
+
     switch (topic) {
 
         case "drone/gps":
-            console.log("gps drone:", data);
+
+            saveGps(data)
+                .then(() => {
+                    console.log("gps drone:", data);
+                })
+                .catch(err => {
+                    console.error("Errore GPS:", err.message);
+                });
+
             break;
 
         case "drone/temp":
-            console.log("temperatura geofence:", data);
+
+            saveTemperature(data)
+                .then(() => {
+                    console.log("temperatura:", data);
+                })
+                .catch(err => {
+                    console.error("Errore temperatura:", err.message);
+                });
+
             break;
 
         case "drone/hum":
-            console.log("umidità geofence:", data);
+
+            saveHumidity(data)
+                .then(() => {
+                    console.log("umidità:", data);
+                })
+                .catch(err => {
+                    console.error("Errore umidità:", err.message);
+                });
+
             break;
 
         default:
-            console.log("ℹTopic non gestito:", topic);
+
+            console.log("Topic non gestito:", topic);
     }
 }
 

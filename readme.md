@@ -88,3 +88,26 @@ influxdb3 create table \
   home
 
 se aggiungo in un secondo momento dei nuovi campi verrannoa ggiunti in fondo alla tabella
+
+come li salvo:
+const line =
+    `gps,device=drone1 lat=44.69,lng=10.63,alt=120`;
+
+| measurement | tag           | fields      | timestamp  |
+| ----------- | ------------- | ----------- | ---------- |
+| gps         | device=drone1 | lat,lng,alt | automatico |
+
+per evdere tutti i dati del db:
+
+  influxdb3 query \
+  --token AUTH_TOKEN \
+  --database DATABASE_NAME \
+  "SELECT * FROM home ORDER BY time"
+
+sostituisco DATABASE_NAME con il nome del database e home con il nome della tabella (measurement).
+
+per vedere le tabelle disponibili nel db:
+influxdb3 query \
+  --database DATABASE_NAME \
+  --token AUTH_TOKEN \
+  "SHOW TABLES"
