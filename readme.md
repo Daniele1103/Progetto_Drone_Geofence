@@ -111,3 +111,6 @@ influxdb3 query \
   --database DATABASE_NAME \
   --token AUTH_TOKEN \
   "SHOW TABLES"
+
+per documentazione node:
+https://www.npmjs.com/package/@influxdata/influxdb3-client?activeTab=readme

@@ -12,10 +12,11 @@ const Navbar = () => {
             >
                 <Container>
                     <RBNavbar.Brand as={Link} to="/">GeoManager</RBNavbar.Brand>
-
+                
                     <Nav className="me-auto">
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
                         <Nav.Link as={Link} to="/map">Mappa</Nav.Link>
+                        <Nav.Link as={Link} to="/drone">Drone</Nav.Link>
                     </Nav>
                 </Container>
             </RBNavbar>

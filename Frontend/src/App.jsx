@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Geofence from './components/Geofence';
 import { Container } from 'react-bootstrap';
 import axios from "axios";
+import DroneDashboard from './components/DroneDashboard';
 
 const Welcome = () => (
   <div className="welcome-container">
@@ -20,6 +21,7 @@ function InnerHome() {
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/map" element={<Geofence />} />
+          <Route path="/drone" element={<DroneDashboard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Container>

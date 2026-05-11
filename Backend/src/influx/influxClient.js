@@ -18,7 +18,7 @@ const client = new InfluxDBClient({
 ========================= */
 
 export function saveGps(data) {
-
+    // il primo elemento è la misurement, dopo il primo separato con la virgola ci sono i tag, dopo si metto per forza uno spazio e iniziano i value/campi (posso anche non mettere i tag)
     const line =
         `gps,device=drone1 ` +
         `lat=${data.lat},` +
