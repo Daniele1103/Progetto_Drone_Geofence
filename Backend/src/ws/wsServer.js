@@ -9,7 +9,7 @@ console.log("WebSocket server avviato su ws://localhost:3001");
 // lista client connessi
 const clients = new Set();
 
-let droneOnline = true;
+let droneOnline = false;
 
 wss.on("connection", (ws) => {
 
