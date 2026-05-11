@@ -4,7 +4,7 @@ import {
     saveTemperature,
     saveHumidity
 } from "../influx/influxClient.js";
-
+import {checkGeofences} from '../postgis/dbpg.js';
 import { broadcast } from "../ws/wsServer.js";
 
 const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";
@@ -18,6 +18,9 @@ const TOPICS = [
     "drone/battery",
     "drone/status"
 ];
+
+let droneGeofenceState = [];
+export let lastGps = null;
 
 // connect per connettermi
 client.on("connect", () => {
@@ -60,10 +63,50 @@ function handleMessage(topic, data) {
             break;
 
         case "drone/gps":
+            lastGps = data;
+            checkGeofences(data.lng, data.lat)
+                .then((geofences) => {
+
+                    const currentIds = geofences.map(g => g.id);
+
+                    // ENTER
+                    for (const gf of geofences) {
+                        const alreadyInside = droneGeofenceState.find(g => g.id === gf.id);
+
+                        if (!alreadyInside) {
+                            console.log("ENTER GEOFENCE:", gf.id, gf.name);
+
+                            broadcast({
+                                type: "geofence_enter",
+                                zone: gf
+                            });
+                        }
+                    }
+
+                    // EXIT
+                    for (const prev of droneGeofenceState) {
+                        if (!currentIds.includes(prev.id)) {
+                            console.log("EXIT GEOFENCE:", prev.id, prev.name);
+
+                            broadcast({
+                                type: "geofence_exit",
+                                zone: prev
+                            });
+                        }
+                    }
+                    // stato attuale
+                    console.log("CURRENT INSIDE GEOFENCES:", geofences);
+
+                    // aggiorna stato
+                    droneGeofenceState = geofences;
+                })
+                .catch((err) => {
+                    console.error("Errore geofence:", err.message);
+                });
 
             saveGps(data)
                 .then(() => {
-                    console.log("gps drone:", data);
+                    //console.log("gps drone:", data);
                 })
                 .catch(err => {
                     console.error("Errore GPS:", err.message);
@@ -80,7 +123,7 @@ function handleMessage(topic, data) {
 
             saveTemperature(data)
                 .then(() => {
-                    console.log("temperatura:", data);
+                    //console.log("temperatura:", data);
                 })
                 .catch(err => {
                     console.error("Errore temperatura:", err.message);
@@ -97,7 +140,7 @@ function handleMessage(topic, data) {
 
             saveHumidity(data)
                 .then(() => {
-                    console.log("umidità:", data);
+                    //console.log("umidità:", data);
                 })
                 .catch(err => {
                     console.error("Errore umidità:", err.message);

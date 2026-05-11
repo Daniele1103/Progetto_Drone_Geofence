@@ -4,6 +4,10 @@ Nella cartella principale: docker compose up -d
 Abilita PostGIS (solo la prima volta):
 docker exec -it gis_db psql -U user_admin -d mio_gis_db -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
+CREATE INDEX geofences_geom_idx
+ON public.geofences
+USING GIST (geom);
+
 Installa Node Modules:
 Entra in backend/ e lancia: npm install
 

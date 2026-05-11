@@ -1,4 +1,4 @@
-import pool from '../../config/dbpg.js';
+import pool from '../../postgis/dbpg.js';
 
 export const createGeofence = async (req, res) => {
     try {

@@ -53,6 +53,9 @@ const DroneDashboard = () => {
     // per tentitivi riconessione al server
     const [isRetrying, setIsRetrying] = useState(false);
 
+    const [activeGeofences, setActiveGeofences] = useState([]);
+    const lastGpsRef = useRef(null);
+
     // useffect per scrollare sempre l'ultimo emssaggio log
     useEffect(() => {
         if (logContainerRef.current) {
@@ -145,6 +148,7 @@ const DroneDashboard = () => {
             setHumidityData([])
             setTemperatureData([])
             setLogs([])
+            setActiveGeofences([])
 
         };
 
@@ -155,6 +159,7 @@ const DroneDashboard = () => {
             setHumidityData([])
             setTemperatureData([])
             setLogs([])
+            setActiveGeofences([])
         };
 
         ws.onmessage = (event) => {
@@ -185,6 +190,8 @@ const DroneDashboard = () => {
                         data.lng,
                         data.lat
                     ]);
+
+                    lastGpsRef.current = coord;
 
                     // create marker
                     if (!droneFeatureRef.current) {
@@ -225,16 +232,52 @@ const DroneDashboard = () => {
                         });
                         firstGpsRef.current = false;
                     }
-                    // log
+                    break;
+                }
+                case "geofence_snapshot":
+                    setActiveGeofences(data.zones);
+                    //console.log(data.zones)
                     setLogs(prev => [
                         ...prev,
                         {
                             time: new Date().toLocaleTimeString(),
-                            msg: "Nuovo punto GPS ricevuto"
+                            msg: `Snapshot geofence: dentro ${data.zones.length} zone`
                         }
                     ].slice(-50));
+
                     break;
-                }
+
+                case "geofence_enter":
+                    //console.log("entratoooo, ", data)
+                    setLogs(prev => [
+                        ...prev,
+                        {
+                            time: new Date().toLocaleTimeString(),
+                            msg: `ENTRATO in geofence: ${data.zone.name}`
+                        }
+                    ].slice(-50));
+
+                    setActiveGeofences(prev => {
+                        if (prev.some(g => g.id === data.zone.id)) return prev;
+                        return [...prev, data.zone];
+                    });
+                    break;
+
+                case "geofence_exit":
+                    //console.log("uscitoooo, ", data)
+                    setLogs(prev => [
+                        ...prev,
+                        {
+                            time: new Date().toLocaleTimeString(),
+                            msg: `USCITO da geofence: ${data.zone.name}`
+                        }
+                    ].slice(-50));
+
+                    setActiveGeofences(prev =>
+                        prev.filter(g => g.id !== data.zone.id)
+                    );
+
+                    break;
 
                 case "temperature":
                     setTemperatureData(prev =>
@@ -286,6 +329,7 @@ const DroneDashboard = () => {
         setHumidityData([])
         setTemperatureData([])
         setLogs([])
+        setActiveGeofences([])
     };
 
     const retryConnection = () => {
@@ -296,6 +340,16 @@ const DroneDashboard = () => {
             connect();
             setIsRetrying(false);
         }, 500);
+    };
+
+    const centerOnDrone = () => {
+        if (!mapRef.current || !lastGpsRef.current) return;
+
+        mapRef.current.getView().animate({
+            center: lastGpsRef.current,
+            zoom: 17,
+            duration: 600
+        });
     };
 
     return (
@@ -452,9 +506,41 @@ const DroneDashboard = () => {
                                 />
 
                             </div>
-
                         </div>
+                        {/* CENTER BUTTON */}
+                        <Button
+                            variant="primary"
+                            onClick={centerOnDrone}
+                            className="mt-2 w-100"
+                        >
+                            Centra Drone
+                        </Button>
+                        <div className="mt-3">
+                            <div className="text-secondary small mb-2">
+                                Geofence attivi
+                            </div>
 
+                            {activeGeofences.length === 0 ? (
+                                <div className="text-secondary small">
+                                    Nessuna zona attiva
+                                </div>
+                            ) : (
+                                activeGeofences.map(gf => (
+                                    <div
+                                        key={gf.id}
+                                        className="d-flex align-items-center justify-content-between text-light small mb-1"
+                                        style={{
+                                            background: '#222',
+                                            padding: '6px 8px',
+                                            borderRadius: 6
+                                        }}
+                                    >
+                                        <span>{gf.name}</span>
+                                        <span style={{ color: '#28a745' }}>●</span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
 
                     {/*MAIN*/}

@@ -4,7 +4,7 @@ import pkg from 'pg';
 import geofenceRoutes from './api/routes/geofenceRoutes.js'
 import cors from "cors";
 import "./mqtt/mqttClient.js";
-import pool from "./config/dbpg.js";
+import pool from "./postgis/dbpg.js";
 import path from "path";
 
 dotenv.config({
