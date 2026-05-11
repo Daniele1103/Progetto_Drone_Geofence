@@ -10,6 +10,12 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 
+
+import Style from 'ol/style/Style';
+import CircleStyle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import Stroke from 'ol/style/Stroke';
+
 import { fromLonLat } from 'ol/proj';
 
 import {
@@ -155,13 +161,11 @@ const DroneDashboard = () => {
             const data = JSON.parse(event.data);
 
             switch (data.type) {
-                // ================= SERVER =================
                 case "server":
                     setServerConnected(data.connected);
                     setDroneConnected(data.droneOnline);
                     break;
 
-                // ================= DRONE STATUS =================
                 case "drone_status":
                     setDroneConnected(data.connected);
                     setLogs(prev => [
@@ -176,7 +180,6 @@ const DroneDashboard = () => {
 
                     break;
 
-                // ================= GPS =================
                 case "gps": {
                     const coord = fromLonLat([
                         data.lng,
@@ -189,6 +192,21 @@ const DroneDashboard = () => {
                         droneFeatureRef.current = new Feature({
                             geometry: new Point(coord),
                         });
+
+                        droneFeatureRef.current.setStyle(
+                            new Style({
+                                image: new CircleStyle({
+                                    radius: 8,
+                                    fill: new Fill({
+                                        color: 'red'
+                                    }),
+                                    stroke: new Stroke({
+                                        color: '#ffffff',
+                                        width: 2
+                                    })
+                                })
+                            })
+                        );
 
                         droneSourceRef.current.addFeature(
                             droneFeatureRef.current
@@ -218,7 +236,6 @@ const DroneDashboard = () => {
                     break;
                 }
 
-                // ================= TEMPERATURE =================
                 case "temperature":
                     setTemperatureData(prev =>
                         [
@@ -230,7 +247,7 @@ const DroneDashboard = () => {
                         ].slice(-30)
                     );
                     break;
-                // ================= HUMIDITY =================
+
                 case "humidity":
                     setHumidityData(prev =>
                         [
@@ -243,7 +260,6 @@ const DroneDashboard = () => {
                     );
                     break;
 
-                // ================= BATTERY =================
                 case "battery":
                     setBattery(data.value);
                     break;
@@ -256,7 +272,6 @@ const DroneDashboard = () => {
         wsRef.current = ws;
     };
 
-    // ================= DISCONNECT =================
     const disconnect = () => {
         wsRef.current?.close();
         wsRef.current = null;
@@ -283,7 +298,6 @@ const DroneDashboard = () => {
         }, 500);
     };
 
-    // ================= UI =================
     return (
         <div
             className="bg-dark text-light"
@@ -292,7 +306,7 @@ const DroneDashboard = () => {
             }}
         >
 
-            {/* ================= SERVER OFFLINE ================= */}
+            {/*SERVER OFFLINE*/}
             {!serverConnected && (
 
                 <div className="h-100 d-flex align-items-center justify-content-center">
@@ -333,7 +347,7 @@ const DroneDashboard = () => {
 
             )}
 
-            {/* ================= SERVER ONLINE / DRONE OFFLINE ================= */}
+            {/*SERVER ONLINE / DRONE OFFLINE*/}
             {serverConnected && !droneConnected && (
 
                 <div className="h-100 d-flex align-items-center justify-content-center">
@@ -375,12 +389,12 @@ const DroneDashboard = () => {
                 </div>
             )}
 
-            {/* ================= DRONE ONLINE ================= */}
+            {/*DRONE ONLINE*/}
             {serverConnected && droneConnected && (
 
                 <div className="d-flex h-100">
 
-                    {/* ================= LEFT PANEL ================= */}
+                    {/*LEFT PANEL*/}
                     <div
                         className="border-end border-secondary p-3"
                         style={{
@@ -443,7 +457,7 @@ const DroneDashboard = () => {
 
                     </div>
 
-                    {/* ================= MAIN ================= */}
+                    {/*MAIN*/}
                     <div className="flex-grow-1 p-3 d-flex flex-column">
 
                         <div className="d-flex gap-3" style={{ height: '65%' }}>
