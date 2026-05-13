@@ -60,6 +60,9 @@ function handleMessage(topic, data) {
                 type: "status",
                 online: data.online
             });
+            if(!data.online){
+                lastGps=null;
+            }
             break;
 
         case "drone/gps":

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
+import axios from "axios";
 
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -9,6 +10,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
+import Polygon from 'ol/geom/Polygon';
 
 
 import Style from 'ol/style/Style';
@@ -34,6 +36,9 @@ const DroneDashboard = () => {
     const mapRef = useRef(null);
     const firstGpsRef = useRef(true);
 
+    const [geofences, setGeofences] = useState([]);
+    const geofenceSourceRef = useRef(new VectorSource());
+
     const droneSourceRef = useRef(new VectorSource());
     const droneFeatureRef = useRef(null);
 
@@ -56,6 +61,8 @@ const DroneDashboard = () => {
     const [activeGeofences, setActiveGeofences] = useState([]);
     const lastGpsRef = useRef(null);
 
+
+
     // useffect per scrollare sempre l'ultimo emssaggio log
     useEffect(() => {
         if (logContainerRef.current) {
@@ -71,6 +78,23 @@ const DroneDashboard = () => {
             disconnect();
         };
 
+    }, []);
+
+    useEffect(() => {
+        axios.get("http://localhost:3000/geofences")
+            .then((res) => {
+                const data = res.data;
+                //console.log(res.data)
+
+                setGeofences(data);
+
+                geofenceSourceRef.current.clear();
+
+                data.forEach(addFeatureToMap);
+            })
+            .catch((err) => {
+                console.error("Errore fetch geofences:", err);
+            });
     }, []);
 
     useEffect(() => {
@@ -93,6 +117,11 @@ const DroneDashboard = () => {
                 new VectorLayer({
                     source: droneSourceRef.current,
                 }),
+                // geofence salvati
+                new VectorLayer({
+                    source: geofenceSourceRef.current,
+                    style: geofenceStyle
+                })
             ],
 
             view: new View({
@@ -351,6 +380,37 @@ const DroneDashboard = () => {
             duration: 600
         });
     };
+
+    const addFeatureToMap = (item) => {
+        const geometry = JSON.parse(item.geometry);
+
+        const coords = geometry.coordinates[0].map(c => fromLonLat(c));
+
+        const polygon = new Polygon([coords]);
+
+        const feature = new Feature({
+            geometry: polygon,
+        });
+
+        feature.set("id", item.id);
+        feature.set("name", item.name);
+
+        geofenceSourceRef.current.addFeature(feature);
+
+        //console.log(savedSourceRef.current.getFeatures())
+    };
+
+    const geofenceStyle = new Style({
+        stroke: new Stroke({
+            color: 'rgba(0, 194, 255, 0.7)',
+            width: 1.5,
+            lineDash: [6, 6]
+        }),
+
+        fill: new Fill({
+            color: 'rgba(0, 194, 255, 0.12)',
+        }),
+    })
 
     return (
         <div
