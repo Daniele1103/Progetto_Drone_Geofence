@@ -81,6 +81,31 @@ const DroneDashboard = () => {
     }, []);
 
     useEffect(() => {
+        const features = geofenceSourceRef.current.getFeatures();
+
+        features.forEach(feature => {
+            const id = feature.get("id");
+            const isActive = activeGeofences.some(g => g.id === id);
+
+            feature.setStyle(
+                isActive
+                    ? new Style({
+                        stroke: new Stroke({
+                            color: 'rgba(40, 167, 69, 0.9)',  // #28a745
+                            width: 2.5,
+                            lineDash: [6, 6]
+                        }),
+                        fill: new Fill({
+                            color: 'rgba(40, 167, 69, 0.25)', // #28a745 con trasparenza
+                        }),
+                    })
+                    : null // null = torna allo stile di default del layer
+            );
+        });
+
+    }, [activeGeofences, geofences]);
+
+    useEffect(() => {
         axios.get("http://localhost:3000/geofences")
             .then((res) => {
                 const data = res.data;
@@ -229,20 +254,27 @@ const DroneDashboard = () => {
                             geometry: new Point(coord),
                         });
 
-                        droneFeatureRef.current.setStyle(
+                        droneFeatureRef.current.setStyle([
+                            // glow esterno
                             new Style({
                                 image: new CircleStyle({
-                                    radius: 8,
-                                    fill: new Fill({
-                                        color: 'red'
-                                    }),
+                                    radius: 12,
+                                    fill: new Fill({ color: 'rgba(220, 53, 69, 0.15)' }),
                                     stroke: new Stroke({
-                                        color: '#ffffff',
-                                        width: 2
+                                        color: 'rgba(220, 53, 69, 0.4)',
+                                        width: 1.5
                                     })
                                 })
+                            }),
+                            // punto drone
+                            new Style({
+                                image: new CircleStyle({
+                                    radius: 7,
+                                    fill: new Fill({ color: '#dc3545' }),
+                                    stroke: new Stroke({ color: '#ffffff', width: 2 })
+                                })
                             })
-                        );
+                        ]);
 
                         droneSourceRef.current.addFeature(
                             droneFeatureRef.current
@@ -402,13 +434,12 @@ const DroneDashboard = () => {
 
     const geofenceStyle = new Style({
         stroke: new Stroke({
-            color: 'rgba(0, 194, 255, 0.7)',
+            color: 'rgba(0, 123, 255, 0.5)',
             width: 1.5,
             lineDash: [6, 6]
         }),
-
         fill: new Fill({
-            color: 'rgba(0, 194, 255, 0.12)',
+            color: 'rgba(0, 123, 255, 0.07)',
         }),
     })
 
