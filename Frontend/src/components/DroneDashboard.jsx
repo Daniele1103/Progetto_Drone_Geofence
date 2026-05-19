@@ -285,6 +285,7 @@ const DroneDashboard = () => {
                             .setCoordinates(coord);
                     }
                     // SOLO LA PRIMA VOLTA
+                    if (!mapRef.current) return;
                     if (firstGpsRef.current) {
                         mapRef.current.getView().animate({
                             center: coord,

@@ -1,6 +1,6 @@
 import { WebSocketServer } from "ws";
 import { lastGps } from "../mqtt/mqttClient.js";
-import {checkGeofences} from '../postgis/dbpg.js';
+import {checkGeofences} from '../api/controllers/geofenceController.js';
 
 const wss = new WebSocketServer({ port: 3001 });
 

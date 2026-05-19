@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Geofence from './components/Geofence';
+import Storico from './components/Storico'
 import { Container } from 'react-bootstrap';
 import axios from "axios";
 import DroneDashboard from './components/DroneDashboard';
@@ -22,6 +23,7 @@ function InnerHome() {
           <Route path="/" element={<Welcome />} />
           <Route path="/map" element={<Geofence />} />
           <Route path="/drone" element={<DroneDashboard />} />
+          <Route path="/storico" element={<Storico />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Container>

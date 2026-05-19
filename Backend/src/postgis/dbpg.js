@@ -32,21 +32,4 @@ pool.connect()
     uso connect solo per verificare connessione, poi userò solo il pool con query
 */
 
-
-export async function checkGeofences(lng, lat) {
-    const result = await pool.query(
-        `
-        SELECT id, name
-        FROM geofences
-        WHERE ST_Contains(
-            geom,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)
-        )
-        `,
-        [lng, lat]
-    );
-
-    return result.rows;
-}
-
 export default pool;

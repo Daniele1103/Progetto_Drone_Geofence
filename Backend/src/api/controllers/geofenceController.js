@@ -68,3 +68,19 @@ export const deleteGeofence = async (req, res) => {
         res.status(500).json({ error: 'Errore eliminazione geofence' });
     }
 };
+
+export async function checkGeofences(lng, lat) {
+    const result = await pool.query(
+        `
+        SELECT id, name
+        FROM geofences
+        WHERE ST_Contains(
+            geom,
+            ST_SetSRID(ST_MakePoint($1, $2), 4326)
+        )
+        `,
+        [lng, lat]
+    );
+
+    return result.rows;
+}

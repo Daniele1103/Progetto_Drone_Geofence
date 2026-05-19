@@ -316,7 +316,7 @@ const Geofence = () => {
         // sto forzando manualmente la selezione della feature, simulando il comportamento del click,
         // cioè aggiungendola alla lista delle feature selezionate e facendo scattare lo style di selezione.
 
-        const collection = selectRef.current.getFeatures();         // ottengo tutte le feature selezionate, collection è una lista di oggetti Feature
+        const collection = selectRef.current.getFeatures();         // ottengo tutte le feature selezionate, ritorna un oggetto di tipo collection che è una lista di oggetti Feature  (es: Collection<Feature>)
 
         collection.clear();        // deseleziona altri
         collection.push(feature);  // seleziona questo

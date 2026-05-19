@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import pkg from 'pg';
 import geofenceRoutes from './api/routes/geofenceRoutes.js'
+import sensorRoutes from './api/routes/sensorRoutes.js'
 import cors from "cors";
 import "./mqtt/mqttClient.js";
 import pool from "./postgis/dbpg.js";
@@ -19,5 +20,6 @@ app.use(cors());
 
 
 app.use('/geofences', geofenceRoutes);
+app.use('/sensors', sensorRoutes);
 
 export default app;

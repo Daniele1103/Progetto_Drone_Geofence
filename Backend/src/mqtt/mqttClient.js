@@ -4,7 +4,7 @@ import {
     saveTemperature,
     saveHumidity
 } from "../influx/influxClient.js";
-import {checkGeofences} from '../postgis/dbpg.js';
+import {checkGeofences} from '../api/controllers/geofenceController.js';
 import { broadcast } from "../ws/wsServer.js";
 
 const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";

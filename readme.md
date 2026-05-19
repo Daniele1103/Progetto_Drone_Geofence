@@ -112,5 +112,15 @@ influxdb3 query \
   --token AUTH_TOKEN \
   "SHOW TABLES"
 
+
+influxdb3 query   --token AUTH_TOKEN --database droneDB   "SELECT * FROM gps  ORDER BY time limit 10"
+
 per documentazione node:
 https://www.npmjs.com/package/@influxdata/influxdb3-client?activeTab=readme
+
+
+influxdb3 delete table \
+  --database DATABASE_NAME \
+  --token AUTH_TOKEN \
+  TABLE_NAME
+
