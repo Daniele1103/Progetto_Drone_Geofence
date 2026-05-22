@@ -6,6 +6,7 @@ import Storico from './components/Storico'
 import { Container } from 'react-bootstrap';
 import axios from "axios";
 import DroneDashboard from './components/DroneDashboard';
+import DroneTrips from './components/Dronetrips';
 
 const Welcome = () => (
   <div className="welcome-container">
@@ -24,6 +25,7 @@ function InnerHome() {
           <Route path="/map" element={<Geofence />} />
           <Route path="/drone" element={<DroneDashboard />} />
           <Route path="/storico" element={<Storico />} />
+          <Route path="/trips" element={<DroneTrips />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Container>

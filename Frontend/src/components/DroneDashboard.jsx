@@ -130,9 +130,7 @@ const DroneDashboard = () => {
         if (mapRef.current) return;
 
         mapRef.current = new Map({
-
             target: mapElement.current,
-
             layers: [
 
                 new TileLayer({
@@ -148,7 +146,6 @@ const DroneDashboard = () => {
                     style: geofenceStyle
                 })
             ],
-
             view: new View({
                 center: fromLonLat([10.8354, 44.3335]),
                 zoom: 15,
@@ -160,12 +157,9 @@ const DroneDashboard = () => {
         }, 200);
 
         return () => {
-
             if (mapRef.current) {
-
                 mapRef.current.setTarget(null);
                 mapRef.current = null;
-
             }
         };
 
