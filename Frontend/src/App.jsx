@@ -2,11 +2,11 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Geofence from './components/Geofence';
-import Storico from './components/Storico'
+import HeatMap from './components/HeatMap'
 import { Container } from 'react-bootstrap';
 import axios from "axios";
 import DroneDashboard from './components/DroneDashboard';
-import DroneTrips from './components/Dronetrips';
+import DroneTrips from './components/DroneTrips';
 
 const Welcome = () => (
   <div className="welcome-container">
@@ -24,7 +24,7 @@ function InnerHome() {
           <Route path="/" element={<Welcome />} />
           <Route path="/map" element={<Geofence />} />
           <Route path="/drone" element={<DroneDashboard />} />
-          <Route path="/storico" element={<Storico />} />
+          <Route path="/heatmap" element={<HeatMap />} />
           <Route path="/trips" element={<DroneTrips />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

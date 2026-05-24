@@ -17,7 +17,7 @@ const Navbar = () => {
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
                         <Nav.Link as={Link} to="/map">Geofence</Nav.Link>
                         <Nav.Link as={Link} to="/drone">Drone</Nav.Link>
-                        <Nav.Link as={Link} to="/storico">Storico</Nav.Link>
+                        <Nav.Link as={Link} to="/heatmap">HeatMap</Nav.Link>
                         <Nav.Link as={Link} to="/trips">Viaggi</Nav.Link>
                     </Nav>
                 </Container>

@@ -69,7 +69,7 @@ export async function getGpsHistory(req, res) {
         res.status(500).json({ error: err.message });
     }
 }
-
+// per ora non mi servono, li lascio che non si sa mai
 export async function getTemperatureHistory(req, res) {
 
     try {
@@ -106,6 +106,7 @@ export async function getTemperatureHistory(req, res) {
     }
 }
 
+// per ora non mi servono, li lascio che non si sa mai
 export async function getHumidityHistory(req, res) {
 
     try {
