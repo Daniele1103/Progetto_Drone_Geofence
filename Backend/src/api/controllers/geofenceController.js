@@ -84,3 +84,25 @@ export async function checkGeofences(lng, lat) {
 
     return result.rows;
 }
+
+
+export async function checkGeofencesBulk(points) {
+
+    if (points.length === 0) return [];
+
+    const values = points
+        .map((p, i) => `(${i}, ${p.lng}, ${p.lat})`)
+        .join(", ");
+
+    const result = await pool.query(`
+        SELECT v.idx, g.id, g.name
+        FROM (VALUES ${values}) AS v(idx, lng, lat)
+        JOIN geofences g
+        ON ST_Contains(
+            g.geom,
+            ST_SetSRID(ST_MakePoint(v.lng::float, v.lat::float), 4326)
+        )
+    `);
+
+    return result.rows;
+}

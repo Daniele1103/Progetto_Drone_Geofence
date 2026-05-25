@@ -165,7 +165,6 @@ const DroneDashboard = () => {
 
     }, [droneConnected]);
 
-    // ================= CONNECT =================
     const connect = () => {
 
         if (wsRef.current) return;
