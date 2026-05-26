@@ -1,0 +1,33 @@
+.geofence-stats-card {
+    transition: all 0.15s ease;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    margin: 4px;
+}
+
+.geofence-stats-card:hover {
+    border-color: #00c2ff;
+
+    box-shadow:
+        0 0 0 1px #00c2ff,
+        0 0 20px rgba(0, 194, 255, 0.8);
+
+    transform: scale(1.02);
+}
+
+.geofence-stats-card.selected-card {
+    background: rgba(0, 194, 255, 0.12) !important;
+
+    box-shadow:
+        0 0 12px rgba(0, 194, 255, 0.5);
+
+    border-width: 2px !important;
+    border-color: #00c2ff !important;
+}
+
+.geofence-stats-badge {
+    background: rgba(255, 255, 255, 0.08);
+    color: #aaa;
+    font-size: 0.7rem;
+}
