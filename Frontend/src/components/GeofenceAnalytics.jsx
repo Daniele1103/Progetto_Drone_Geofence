@@ -64,6 +64,9 @@ const GeofenceAnalytics = () => {
     const [loadingSlots, setLoadingSlots] = useState(true);
     const [loadingData, setLoadingData] = useState(false);
 
+    const [activeLayer, setActiveLayer] = useState("temperature");
+    const activeLayerRef = useRef("temperature");
+
     useEffect(() => {
         mapRef.current = new Map({
             target: mapElement.current,
@@ -89,7 +92,6 @@ const GeofenceAnalytics = () => {
             multi: true,
             style: geofenceSelectedStyle
         });
-
 
         select.on('select', () => {
             pointsSource.current.clear();
@@ -215,7 +217,17 @@ const GeofenceAnalytics = () => {
         // disegna i punti del geofence selezionato
         pointsSource.current.clear();
         drawPoints(gfId);
+    };
 
+    const handleLayerToggle = (layer) => {
+        if (activeLayerRef.current === layer) return;
+        activeLayerRef.current = layer;
+        setActiveLayer(layer);
+
+        if (selectedGfId) {
+            pointsSource.current.clear();
+            drawPoints(selectedGfId);
+        }
     };
 
     // Mi serve solo per il metodo quando clicco la card, non per l'evento sulla mappa
@@ -233,29 +245,33 @@ const GeofenceAnalytics = () => {
     const zoomGeofenceSelected = (gfId) => {
         const feature = geofenceSource.current.getFeatures().find(f => f.get("id") === gfId);
         if (!feature) return;
-            const extent = feature.getGeometry().getExtent();
-            mapRef.current.getView().fit(extent, {
-                padding: [60, 60, 60, 60],
-                duration: 700, maxZoom: 18
-            });
+        const extent = feature.getGeometry().getExtent();
+        mapRef.current.getView().fit(extent, {
+            padding: [60, 60, 60, 60],
+            duration: 700, maxZoom: 18
+        });
     }
 
     const drawPoints = (gfId) => {
         const gfEntry = geofenceDataRef.current.find(g => g.id === gfId);
         if (!gfEntry) return;
 
-        gfEntry.temperature.forEach(p => {
-            const f = new Feature({ geometry: new Point(fromLonLat([p.lng, p.lat])) });
-            f.setStyle(makeTempPointStyle());
-            pointsSource.current.addFeature(f);
-        });
+        const layer = activeLayerRef.current;
 
-        gfEntry.humidity.forEach(p => {
-            const f = new Feature({ geometry: new Point(fromLonLat([p.lng, p.lat])) });
-            f.setStyle(makeHumPointStyle());
-            pointsSource.current.addFeature(f);
-        });
-    }
+        if (layer === "temperature") {
+            gfEntry.temperature.forEach(p => {
+                const f = new Feature({ geometry: new Point(fromLonLat([p.lng, p.lat])) });
+                f.setStyle(makeTempPointStyle());
+                pointsSource.current.addFeature(f);
+            });
+        } else {
+            gfEntry.humidity.forEach(p => {
+                const f = new Feature({ geometry: new Point(fromLonLat([p.lng, p.lat])) });
+                f.setStyle(makeHumPointStyle());
+                pointsSource.current.addFeature(f);
+            });
+        }
+    };
 
     return (
         <div
@@ -263,7 +279,6 @@ const GeofenceAnalytics = () => {
             style={{ height: "calc(100vh - 57px)", overflow: "hidden" }}
         >
 
-            {/* ── COLONNA SINISTRA: fasce orarie ───────────────────────────── */}
             <div
                 className="border-end border-secondary d-flex flex-column"
                 style={{ width: 260, background: "#111", flexShrink: 0 }}
@@ -295,7 +310,6 @@ const GeofenceAnalytics = () => {
                 </div>
             </div>
 
-            {/* ── CENTRO: mappa ────────────────────────────────────────────── */}
             <div className="flex-grow-1 p-3 d-flex flex-column" style={{ minWidth: 0 }}>
                 <h4 className="mb-2">Mappa Interattiva</h4>
                 <div
@@ -304,22 +318,52 @@ const GeofenceAnalytics = () => {
                     style={{ minHeight: 0 }}
                 />
 
-                {/* legenda punti */}
                 {selectedGfId && (
-                    <div className="d-flex gap-3 mt-2" style={{ fontSize: "0.75rem" }}>
-                        <span>
-                            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "rgba(255,115,0,0.85)", marginRight: 4 }} />
-                            Temperatura
-                        </span>
-                        <span>
-                            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "rgba(0,194,255,0.85)", marginRight: 4 }} />
-                            Umidità
-                        </span>
+                    <div className="d-flex align-items-center gap-3 mt-2">
+                        <div
+                            className="btn-group btn-group-sm"
+                            role="group"
+                            aria-label="Seleziona layer"
+                        >
+                            <button
+                                type="button"
+                                className={`btn ${activeLayer === "temperature" ? "btn-warning" : "btn-outline-secondary"}`}
+                                onClick={() => handleLayerToggle("temperature")}
+                            >
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: "50%",
+                                        background: "rgba(255,115,0,0.85)",
+                                        marginRight: 5,
+                                    }}
+                                />
+                                Temperatura
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn ${activeLayer === "humidity" ? "btn-info" : "btn-outline-secondary"}`}
+                                onClick={() => handleLayerToggle("humidity")}
+                            >
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: "50%",
+                                        background: "rgba(0,194,255,0.85)",
+                                        marginRight: 5,
+                                    }}
+                                />
+                                Umidità
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* ── COLONNA DESTRA: geofence ─────────────────────────────────── */}
             <div
                 className="border-start border-secondary d-flex flex-column"
                 style={{ width: 280, background: "#111", flexShrink: 0 }}
