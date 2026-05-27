@@ -15,6 +15,8 @@ import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 import CircleStyle from "ol/style/Circle";
 import { fromLonLat } from "ol/proj";
+import Select from 'ol/interaction/Select';
+
 import SlotCard from "./SlotCard";
 import GeofenceStatsCard from "./GeofenceStatsCard";
 
@@ -54,8 +56,10 @@ const GeofenceAnalytics = () => {
     const [slots, setSlots] = useState([]);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [geofenceData, setGeofenceData] = useState([]);
-    const [allGeofences, setAllGeofences] = useState([]);
+    const geofenceDataRef = useRef(null);
+
     const [selectedGfId, setSelectedGfId] = useState(null);
+    const selectRef = useRef(null);
 
     const [loadingSlots, setLoadingSlots] = useState(true);
     const [loadingData, setLoadingData] = useState(false);
@@ -64,18 +68,66 @@ const GeofenceAnalytics = () => {
         mapRef.current = new Map({
             target: mapElement.current,
             layers: [
-                new TileLayer({ source: new OSM() }),
-                new VectorLayer({ source: geofenceSource.current, style: geofenceStyle }),
-                new VectorLayer({ source: pointsSource.current }),
+                new TileLayer({
+                    source: new OSM()
+                }),
+                new VectorLayer({
+                    source: geofenceSource.current, style: geofenceStyle
+                }),
+                new VectorLayer({
+                    source: pointsSource.current
+                }),
             ],
             view: new View({
                 center: fromLonLat([10.8354, 44.3335]),
                 zoom: 16,
             }),
         });
+
+        const select = new Select({
+            layers: [mapRef.current.getLayers().getArray()[1]],
+            multi: true,
+            style: geofenceSelectedStyle
+        });
+
+
+        select.on('select', () => {
+            pointsSource.current.clear();
+            setSelectedGfId(null);
+
+            const selectedFeatures = select
+                .getFeatures()
+                .getArray();
+
+            const feature = selectedFeatures[0];
+
+            if (!feature) return;
+
+            const id = feature.get('id');
+
+            setSelectedGfId(id);
+
+            zoomGeofenceSelected(id);
+
+            drawPoints(id);
+        });
+
+        mapRef.current.addInteraction(select);
+
+        selectRef.current = select;
         setTimeout(() => mapRef.current?.updateSize(), 200);
         return () => mapRef.current?.setTarget(null);
     }, []);
+
+    useEffect(() => {
+        if (selectRef.current) {
+            if (selectedSlot) {
+                selectRef.current.setActive(true);
+            } else {
+                selectRef.current.setActive(false);
+            }
+        }
+    }, [selectedSlot]);
 
     useEffect(() => {
         axios.get("http://localhost:3000/sensors/tripsDate")
@@ -94,7 +146,6 @@ const GeofenceAnalytics = () => {
         axios.get("http://localhost:3000/geofences")
             .then((res) => {
                 const data = res.data;
-                setAllGeofences(data);
                 geofenceSource.current.clear();
                 data.forEach(addFeatureToMap);
             })
@@ -124,7 +175,8 @@ const GeofenceAnalytics = () => {
         setSelectedSlot(slot);
         setSelectedGfId(null);
         pointsSource.current.clear();
-        resetGeofenceStyles();
+        selectRef.current.getFeatures().clear();
+
         setLoadingData(true);
 
         axios.get("http://localhost:3000/sensors/dateByGeofence", {
@@ -135,6 +187,7 @@ const GeofenceAnalytics = () => {
         })
             .then((res) => {
                 setGeofenceData(res.data)
+                geofenceDataRef.current = res.data;
             })
             .catch((err) => {
                 console.error("Errore:", err)
@@ -146,30 +199,49 @@ const GeofenceAnalytics = () => {
 
     const handleGeofenceClick = (gfId) => {
         if (selectedGfId === gfId) {
-            // deseleziona
             setSelectedGfId(null);
             pointsSource.current.clear();
-            resetGeofenceStyles();
+            selectRef.current.getFeatures().clear();
+
             return;
         }
 
-        setSelectedGfId(gfId);
-
-        // evidenzia il poligono selezionato
-        geofenceSource.current.getFeatures().forEach(f => {
-            f.setStyle(f.get("id") === gfId ? geofenceSelectedStyle : geofenceStyle);
-        });
+        // seleziono il geofence con il select
+        selectGeofenceById(gfId);
 
         // zoom sul geofence selezionato
-        const feature = geofenceSource.current.getFeatures().find(f => f.get("id") === gfId);
-        if (feature && mapRef.current) {
-            const extent = feature.getGeometry().getExtent();
-            mapRef.current.getView().fit(extent, { padding: [60, 60, 60, 60], duration: 700, maxZoom: 18 });
-        }
+        zoomGeofenceSelected(gfId);
 
         // disegna i punti del geofence selezionato
         pointsSource.current.clear();
-        const gfEntry = geofenceData.find(g => g.id === gfId);
+        drawPoints(gfId);
+
+    };
+
+    // Mi serve solo per il metodo quando clicco la card, non per l'evento sulla mappa
+    const selectGeofenceById = (gfId) => {
+        if (!selectRef.current || !mapRef.current) return;
+
+        const feature = geofenceSource.current.getFeatures().find(f => f.get("id") === gfId);
+        if (!feature) return;
+
+        setSelectedGfId(gfId);
+        selectRef.current.getFeatures().clear();
+        selectRef.current.getFeatures().push(feature);
+    };
+
+    const zoomGeofenceSelected = (gfId) => {
+        const feature = geofenceSource.current.getFeatures().find(f => f.get("id") === gfId);
+        if (!feature) return;
+            const extent = feature.getGeometry().getExtent();
+            mapRef.current.getView().fit(extent, {
+                padding: [60, 60, 60, 60],
+                duration: 700, maxZoom: 18
+            });
+    }
+
+    const drawPoints = (gfId) => {
+        const gfEntry = geofenceDataRef.current.find(g => g.id === gfId);
         if (!gfEntry) return;
 
         gfEntry.temperature.forEach(p => {
@@ -183,11 +255,7 @@ const GeofenceAnalytics = () => {
             f.setStyle(makeHumPointStyle());
             pointsSource.current.addFeature(f);
         });
-    };
-
-    const resetGeofenceStyles = () => {
-        geofenceSource.current.getFeatures().forEach(f => f.setStyle(geofenceStyle));
-    };
+    }
 
     return (
         <div
