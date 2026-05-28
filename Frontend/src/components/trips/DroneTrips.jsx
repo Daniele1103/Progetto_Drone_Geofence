@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button, Badge } from 'react-bootstrap';
 import axios from 'axios';
 import TripCard from './TripCard';
@@ -56,7 +56,9 @@ const DroneTrips = () => {
         mapRef.current = new Map({
             target: mapElement.current,
             layers: [
-                new TileLayer({ source: new OSM() }),
+                new TileLayer({
+                    source: new OSM()
+                }),
                 new VectorLayer({
                     source: pathSourceRef.current
                 }),
@@ -77,6 +79,7 @@ const DroneTrips = () => {
 
     }, []);
 
+    // posiziono tutti i dati iniziali del trip nella mappa
     useEffect(() => {
         if (!selectedTrip) return;
 
@@ -143,11 +146,15 @@ const DroneTrips = () => {
         setPlaying(false);
 
         return () => {
-            stopInterval();
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
         };
 
     }, [selectedTrip]);
 
+    // per muovere il punto drone e il path dietro di lui percorso
     useEffect(() => {
 
         if (!selectedTrip || !droneFeatureRef.current || !pathFeatureRef.current) return;
@@ -167,15 +174,12 @@ const DroneTrips = () => {
         pathFeatureRef.current.getGeometry().setCoordinates(traversed);
     }, [progress, selectedTrip]);
 
-    const stopInterval = useCallback(() => {
+    // per mandare avanti il tempo e modificare progress ad ogni intervallo
+    useEffect(() => {
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
-    }, []);
-
-    useEffect(() => {
-        stopInterval();
 
         if (!playing || !selectedTrip) return;
         const total = selectedTrip.points.length;
@@ -185,7 +189,8 @@ const DroneTrips = () => {
             setProgress(prev => {
 
                 if (prev >= total - 1) {
-                    stopInterval();
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
                     setPlaying(false);
                     return prev;
                 }
@@ -194,8 +199,13 @@ const DroneTrips = () => {
             });
         }, ms);
 
-        return stopInterval;
-    }, [playing, speedIdx, selectedTrip, stopInterval]);
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        };
+    }, [playing, speedIdx, selectedTrip]);
 
     const handlePlayPause = () => {
 
@@ -215,7 +225,11 @@ const DroneTrips = () => {
     };
 
     const handleSelectTrip = (trip) => {
-        stopInterval();
+        // questo blocco serve per eliminare l'intervallo attivo, tanto per ricrearlo allo start dopo la pause mi basta avere salvato il progress e riavviarlo
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
         setSelectedTrip(trip);
     };
 
@@ -242,7 +256,6 @@ const DroneTrips = () => {
             }}
         >
 
-            {/* HEADER */}
             <div
                 className="border-bottom border-secondary px-4 py-3 d-flex align-items-center gap-3"
                 style={{ background: '#0d0d0d', flexShrink: 0 }}
@@ -268,7 +281,6 @@ const DroneTrips = () => {
 
             <div className="d-flex flex-grow-1" style={{ minHeight: 0 }}>
 
-                {/* LISTA */}
                 <div
                     className="border-end border-secondary d-flex flex-column"
                     style={{
@@ -293,10 +305,8 @@ const DroneTrips = () => {
                     })}
                 </div>
 
-                {/* MAPPA + CONTROLLI */}
                 <div className="flex-grow-1 d-flex flex-column p-3 gap-3">
 
-                    {/* MAPPA SEMPRE VISIBILE */}
                     <div
                         className="border border-secondary rounded overflow-hidden flex-grow-1"
                         style={{ minHeight: 0 }}
@@ -307,7 +317,6 @@ const DroneTrips = () => {
                         />
                     </div>
 
-                    {/* CONTROLLI SOLO SE SELEZIONATO */}
                     {selectedTrip && (
                         <div
                             className="border border-secondary rounded p-3"
