@@ -77,9 +77,15 @@ const GeofenceAnalytics = () => {
         mapRef.current = new Map({
             target: mapElement.current,
             layers: [
-                new TileLayer({ source: new OSM() }),
-                new VectorLayer({ source: geofenceSource.current, style: geofenceStyle }),
-                new VectorLayer({ source: pointsSource.current }),
+                new TileLayer({
+                    source: new OSM()
+                }),
+                new VectorLayer({
+                    source: geofenceSource.current, style: geofenceStyle
+                }),
+                new VectorLayer({
+                    source: pointsSource.current
+                }),
             ],
             view: new View({
                 center: fromLonLat([10.8354, 44.3335]),
