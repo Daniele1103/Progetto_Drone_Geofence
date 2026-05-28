@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import chroma from "chroma-js";
 
 import Map from "ol/Map";
 import View from "ol/View";
@@ -19,6 +20,7 @@ import Select from 'ol/interaction/Select';
 
 import SlotCard from "./SlotCard";
 import GeofenceStatsCard from "./GeofenceStatsCard";
+import GradientLegend from "./GradientLegend";
 
 const geofenceStyle = new Style({
     stroke: new Stroke({ color: "rgba(0,123,255,0.9)", width: 2 }),
@@ -30,19 +32,23 @@ const geofenceSelectedStyle = new Style({
     fill: new Fill({ color: "rgba(0,194,255,0.15)" }),
 });
 
-const makeTempPointStyle = () => new Style({
+const tempScale = chroma.scale(["blue", "cyan", "green", "yellow", "red"]).domain([-10, 50]);
+const humScale = chroma.scale(["green", "blue"]).domain([0, 100]);
+
+
+const makeTempPointStyle = (value) => new Style({
     image: new CircleStyle({
-        radius: 5,
-        fill: new Fill({ color: "rgba(255,115,0,0.85)" }),
-        stroke: new Stroke({ color: "#fff", width: 1 }),
+        radius: 6,
+        fill: new Fill({ color: tempScale(value).css() }),
+        stroke: new Stroke({ color: "rgba(255,255,255,0.6)", width: 1 }),
     }),
 });
 
-const makeHumPointStyle = () => new Style({
+const makeHumPointStyle = (value) => new Style({
     image: new CircleStyle({
-        radius: 5,
-        fill: new Fill({ color: "rgba(0,194,255,0.85)" }),
-        stroke: new Stroke({ color: "#fff", width: 1 }),
+        radius: 6,
+        fill: new Fill({ color: humScale(value).css() }),
+        stroke: new Stroke({ color: "rgba(255,255,255,0.6)", width: 1 }),
     }),
 });
 
@@ -71,15 +77,9 @@ const GeofenceAnalytics = () => {
         mapRef.current = new Map({
             target: mapElement.current,
             layers: [
-                new TileLayer({
-                    source: new OSM()
-                }),
-                new VectorLayer({
-                    source: geofenceSource.current, style: geofenceStyle
-                }),
-                new VectorLayer({
-                    source: pointsSource.current
-                }),
+                new TileLayer({ source: new OSM() }),
+                new VectorLayer({ source: geofenceSource.current, style: geofenceStyle }),
+                new VectorLayer({ source: pointsSource.current }),
             ],
             view: new View({
                 center: fromLonLat([10.8354, 44.3335]),
@@ -90,19 +90,14 @@ const GeofenceAnalytics = () => {
         const select = new Select({
             layers: [mapRef.current.getLayers().getArray()[1]],
             multi: true,
-            style: geofenceSelectedStyle
+            style: geofenceSelectedStyle,
         });
 
         select.on('select', () => {
             pointsSource.current.clear();
             setSelectedGfId(null);
 
-            const selectedFeatures = select
-                .getFeatures()
-                .getArray();
-
-            const feature = selectedFeatures[0];
-
+            const feature = select.getFeatures().getArray()[0];
             if (!feature) return;
 
             const id = feature.get('id');
@@ -110,13 +105,13 @@ const GeofenceAnalytics = () => {
             setSelectedGfId(id);
 
             zoomGeofenceSelected(id);
-
             drawPoints(id);
         });
 
         mapRef.current.addInteraction(select);
 
         selectRef.current = select;
+
         setTimeout(() => mapRef.current?.updateSize(), 200);
         return () => mapRef.current?.setTarget(null);
     }, []);
@@ -147,9 +142,8 @@ const GeofenceAnalytics = () => {
     useEffect(() => {
         axios.get("http://localhost:3000/geofences")
             .then((res) => {
-                const data = res.data;
                 geofenceSource.current.clear();
-                data.forEach(addFeatureToMap);
+                res.data.forEach(addFeatureToMap);
             })
             .catch((err) => {
                 console.error("Errore:", err)
@@ -161,14 +155,9 @@ const GeofenceAnalytics = () => {
 
         const coords = geometry.coordinates[0].map(c => fromLonLat(c));
 
-        const polygon = new Polygon([coords]);
-
-        const feature = new Feature({
-            geometry: polygon,
-        });
+        const feature = new Feature({ geometry: new Polygon([coords]) });
 
         feature.set('id', item.id);
-
         geofenceSource.current.addFeature(feature);
     };
 
@@ -178,7 +167,6 @@ const GeofenceAnalytics = () => {
         setSelectedGfId(null);
         pointsSource.current.clear();
         selectRef.current.getFeatures().clear();
-
         setLoadingData(true);
 
         axios.get("http://localhost:3000/sensors/dateByGeofence", {
@@ -188,7 +176,7 @@ const GeofenceAnalytics = () => {
             }
         })
             .then((res) => {
-                setGeofenceData(res.data)
+                setGeofenceData(res.data);
                 geofenceDataRef.current = res.data;
             })
             .catch((err) => {
@@ -204,17 +192,13 @@ const GeofenceAnalytics = () => {
             setSelectedGfId(null);
             pointsSource.current.clear();
             selectRef.current.getFeatures().clear();
-
             return;
         }
 
-        // seleziono il geofence con il select
         selectGeofenceById(gfId);
 
-        // zoom sul geofence selezionato
         zoomGeofenceSelected(gfId);
 
-        // disegna i punti del geofence selezionato
         pointsSource.current.clear();
         drawPoints(gfId);
     };
@@ -245,12 +229,13 @@ const GeofenceAnalytics = () => {
     const zoomGeofenceSelected = (gfId) => {
         const feature = geofenceSource.current.getFeatures().find(f => f.get("id") === gfId);
         if (!feature) return;
-        const extent = feature.getGeometry().getExtent();
-        mapRef.current.getView().fit(extent, {
+
+        mapRef.current.getView().fit(feature.getGeometry().getExtent(), {
             padding: [60, 60, 60, 60],
-            duration: 700, maxZoom: 18
+            duration: 700,
+            maxZoom: 18,
         });
-    }
+    };
 
     const drawPoints = (gfId) => {
         const gfEntry = geofenceDataRef.current.find(g => g.id === gfId);
@@ -261,13 +246,13 @@ const GeofenceAnalytics = () => {
         if (layer === "temperature") {
             gfEntry.temperature.forEach(p => {
                 const f = new Feature({ geometry: new Point(fromLonLat([p.lng, p.lat])) });
-                f.setStyle(makeTempPointStyle());
+                f.setStyle(makeTempPointStyle(p.value));
                 pointsSource.current.addFeature(f);
             });
         } else {
             gfEntry.humidity.forEach(p => {
                 const f = new Feature({ geometry: new Point(fromLonLat([p.lng, p.lat])) });
-                f.setStyle(makeHumPointStyle());
+                f.setStyle(makeHumPointStyle(p.value));
                 pointsSource.current.addFeature(f);
             });
         }
@@ -278,7 +263,6 @@ const GeofenceAnalytics = () => {
             className="d-flex bg-dark text-light"
             style={{ height: "calc(100vh - 57px)", overflow: "hidden" }}
         >
-
             <div
                 className="border-end border-secondary d-flex flex-column"
                 style={{ width: 260, background: "#111", flexShrink: 0 }}
@@ -294,11 +278,9 @@ const GeofenceAnalytics = () => {
                             Caricamento...
                         </div>
                     )}
-
                     {!loadingSlots && slots.length === 0 && (
                         <div className="p-3 text-secondary small">Nessuna fascia disponibile.</div>
                     )}
-
                     {slots.map((slot, i) => (
                         <SlotCard
                             key={i}
@@ -319,27 +301,13 @@ const GeofenceAnalytics = () => {
                 />
 
                 {selectedGfId && (
-                    <div className="d-flex align-items-center gap-3 mt-2">
-                        <div
-                            className="btn-group btn-group-sm"
-                            role="group"
-                            aria-label="Seleziona layer"
-                        >
+                    <div className="d-flex align-items-center gap-3 mt-2 flex-wrap">
+                        <div className="btn-group btn-group-sm" role="group" aria-label="Seleziona layer">
                             <button
                                 type="button"
                                 className={`btn ${activeLayer === "temperature" ? "btn-warning" : "btn-outline-secondary"}`}
                                 onClick={() => handleLayerToggle("temperature")}
                             >
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: "50%",
-                                        background: "rgba(255,115,0,0.85)",
-                                        marginRight: 5,
-                                    }}
-                                />
                                 Temperatura
                             </button>
                             <button
@@ -347,18 +315,18 @@ const GeofenceAnalytics = () => {
                                 className={`btn ${activeLayer === "humidity" ? "btn-info" : "btn-outline-secondary"}`}
                                 onClick={() => handleLayerToggle("humidity")}
                             >
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: "50%",
-                                        background: "rgba(0,194,255,0.85)",
-                                        marginRight: 5,
-                                    }}
-                                />
                                 Umidità
                             </button>
+                        </div>
+
+                        <div style={{ width: "30%" }}>
+                            <GradientLegend
+                                gradient={activeLayer === "temperature" ? tempScale.colors(20) : humScale.colors(20)}
+                                min={activeLayer === "temperature" ? -10 : 0}
+                                max={activeLayer === "temperature" ? 50 : 100}
+                                unit={activeLayer === "temperature" ? "°C" : "%"}
+                                label={activeLayer === "temperature" ? "Temperatura" : "Umidità"}
+                            />
                         </div>
                     </div>
                 )}
@@ -374,19 +342,16 @@ const GeofenceAnalytics = () => {
                 </div>
 
                 <div style={{ overflowY: "auto", flex: 1 }}>
-
                     {!selectedSlot && (
                         <div className="p-3 text-secondary small">
                             Seleziona una fascia oraria.
                         </div>
                     )}
-
                     {selectedSlot && !loadingData && geofenceData.length === 0 && (
                         <div className="p-3 text-secondary small">
                             Nessun dato per questa fascia.
                         </div>
                     )}
-
                     {geofenceData.map(gf => (
                         <GeofenceStatsCard
                             key={gf.id}

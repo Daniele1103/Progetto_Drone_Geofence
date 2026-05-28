@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import chroma from "chroma-js";
 
 import Map from "ol/Map";
 import View from "ol/View";
@@ -11,25 +12,13 @@ import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { fromLonLat } from "ol/proj";
 
-const GPS_GRADIENT = ['#00007f', '#0000ff', '#0080ff', '#00ffff', '#00ff80', '#00ff00', '#80ff00', '#ffff00', '#ff8000', '#ff0000', '#7f0000'];
+import GradientLegend from "./GradientLegend";
+
+const GPS_SCALE = chroma.scale(['#00007f', '#0000ff', '#0080ff', '#00ffff', '#00ff80', '#00ff00', '#80ff00', '#ffff00', '#ff8000', '#ff0000', '#7f0000']);
 
 const toLocalDatetimeLocal = (date) => {
     const offset = date.getTimezoneOffset() * 60000;
     return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-};
-
-const GradientLegend = ({ gradient, min, max, unit, label }) => {
-    const bg = `linear-gradient(to right, ${gradient.join(", ")})`;
-    return (
-        <div className="mb-3">
-            <div className="text-secondary small mb-1">{label}</div>
-            <div style={{ height: 10, borderRadius: 4, background: bg, border: "1px solid rgba(255,255,255,0.1)" }} />
-            <div className="d-flex justify-content-between mt-1" style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
-                <span>{min}{unit}</span>
-                <span>{max}{unit}</span>
-            </div>
-        </div>
-    );
 };
 
 const HeatMap = () => {
@@ -51,7 +40,7 @@ const HeatMap = () => {
             source: gpsSource.current,
             blur: 20,
             radius: 12,
-            gradient: GPS_GRADIENT,
+            gradient: GPS_SCALE.colors(11),
             visible: true,
         });
 
@@ -200,7 +189,7 @@ const HeatMap = () => {
                 <hr className="border-secondary" />
 
                 <GradientLegend
-                    gradient={GPS_GRADIENT}
+                    gradient={GPS_SCALE.colors(11)}
                     min="bassa" max="alta"
                     unit="" label="Densità GPS"
                 />
