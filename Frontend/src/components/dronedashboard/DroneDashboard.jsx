@@ -12,7 +12,6 @@ import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import Polygon from 'ol/geom/Polygon';
 
-
 import Style from 'ol/style/Style';
 import CircleStyle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
@@ -61,7 +60,16 @@ const DroneDashboard = () => {
     const [activeGeofences, setActiveGeofences] = useState([]);
     const lastGpsRef = useRef(null);
 
-
+    const geofenceStyle = new Style({
+        stroke: new Stroke({
+            color: 'rgba(0, 123, 255, 0.5)',
+            width: 1.5,
+            lineDash: [6, 6]
+        }),
+        fill: new Fill({
+            color: 'rgba(0, 123, 255, 0.07)',
+        }),
+    });
 
     // useffect per scrollare sempre l'ultimo emssaggio log
     useEffect(() => {
@@ -71,13 +79,10 @@ const DroneDashboard = () => {
     }, [logs]);
 
     useEffect(() => {
-
         connect();
-
         return () => {
             disconnect();
         };
-
     }, []);
 
     useEffect(() => {
@@ -102,7 +107,6 @@ const DroneDashboard = () => {
                     : null // null = torna allo stile di default del layer
             );
         });
-
     }, [activeGeofences, geofences]);
 
     useEffect(() => {
@@ -112,9 +116,7 @@ const DroneDashboard = () => {
                 //console.log(res.data)
 
                 setGeofences(data);
-
                 geofenceSourceRef.current.clear();
-
                 data.forEach(addFeatureToMap);
             })
             .catch((err) => {
@@ -123,7 +125,6 @@ const DroneDashboard = () => {
     }, []);
 
     useEffect(() => {
-
         if (!droneConnected) return;
 
         // evita doppie init
@@ -132,11 +133,9 @@ const DroneDashboard = () => {
         mapRef.current = new Map({
             target: mapElement.current,
             layers: [
-
                 new TileLayer({
                     source: new OSM(),
                 }),
-
                 new VectorLayer({
                     source: droneSourceRef.current,
                 }),
@@ -144,7 +143,7 @@ const DroneDashboard = () => {
                 new VectorLayer({
                     source: geofenceSourceRef.current,
                     style: geofenceStyle
-                })
+                }),
             ],
             view: new View({
                 center: fromLonLat([10.8354, 44.3335]),
@@ -162,19 +161,15 @@ const DroneDashboard = () => {
                 mapRef.current = null;
             }
         };
-
     }, [droneConnected]);
 
     const connect = () => {
-
         if (wsRef.current) return;
 
         const ws = new WebSocket("ws://localhost:3001");
 
         ws.onopen = () => {
-
             setServerConnected(true);
-
             setLogs(prev => [
                 ...prev,
                 {
@@ -182,31 +177,27 @@ const DroneDashboard = () => {
                     msg: "Connessione al server riuscita"
                 }
             ]);
-
         };
 
         ws.onclose = () => {
             setServerConnected(false);
             setDroneConnected(false);
-
             wsRef.current = null;
-
-            setBattery(0)
-            setHumidityData([])
-            setTemperatureData([])
-            setLogs([])
-            setActiveGeofences([])
-
+            setBattery(0);
+            setHumidityData([]);
+            setTemperatureData([]);
+            setLogs([]);
+            setActiveGeofences([]);
         };
 
         ws.onerror = () => {
             setServerConnected(false);
             setDroneConnected(false);
-            setBattery(0)
-            setHumidityData([])
-            setTemperatureData([])
-            setLogs([])
-            setActiveGeofences([])
+            setBattery(0);
+            setHumidityData([]);
+            setTemperatureData([]);
+            setLogs([]);
+            setActiveGeofences([]);
         };
 
         ws.onmessage = (event) => {
@@ -229,20 +220,15 @@ const DroneDashboard = () => {
                                 : "Drone scollegato"
                         }
                     ].slice(-50));
-
                     break;
 
                 case "gps": {
-                    const coord = fromLonLat([
-                        data.lng,
-                        data.lat
-                    ]);
+                    const coord = fromLonLat([data.lng, data.lat]);
 
                     lastGpsRef.current = coord;
 
                     // create marker
                     if (!droneFeatureRef.current) {
-
                         droneFeatureRef.current = new Feature({
                             geometry: new Point(coord),
                         });
@@ -269,14 +255,11 @@ const DroneDashboard = () => {
                             })
                         ]);
 
-                        droneSourceRef.current.addFeature(
-                            droneFeatureRef.current
-                        );
+                        droneSourceRef.current.addFeature(droneFeatureRef.current);
                     } else {
-                        droneFeatureRef.current
-                            .getGeometry()
-                            .setCoordinates(coord);
+                        droneFeatureRef.current.getGeometry().setCoordinates(coord);
                     }
+
                     // SOLO LA PRIMA VOLTA
                     if (!mapRef.current) return;
                     if (firstGpsRef.current) {
@@ -289,6 +272,7 @@ const DroneDashboard = () => {
                     }
                     break;
                 }
+
                 case "geofence_snapshot":
                     setActiveGeofences(data.zones);
                     //console.log(data.zones)
@@ -299,7 +283,6 @@ const DroneDashboard = () => {
                             msg: `Snapshot geofence: dentro ${data.zones.length} zone`
                         }
                     ].slice(-50));
-
                     break;
 
                 case "geofence_enter":
@@ -331,7 +314,6 @@ const DroneDashboard = () => {
                     setActiveGeofences(prev =>
                         prev.filter(g => g.id !== data.zone.id)
                     );
-
                     break;
 
                 case "temperature":
@@ -380,16 +362,15 @@ const DroneDashboard = () => {
         droneSourceRef.current.clear();
         droneFeatureRef.current = null;
 
-        setBattery(0)
-        setHumidityData([])
-        setTemperatureData([])
-        setLogs([])
-        setActiveGeofences([])
+        setBattery(0);
+        setHumidityData([]);
+        setTemperatureData([]);
+        setLogs([]);
+        setActiveGeofences([]);
     };
 
     const retryConnection = () => {
         setIsRetrying(true);
-
         disconnect();
         setTimeout(() => {
             connect();
@@ -409,14 +390,9 @@ const DroneDashboard = () => {
 
     const addFeatureToMap = (item) => {
         const geometry = JSON.parse(item.geometry);
-
         const coords = geometry.coordinates[0].map(c => fromLonLat(c));
-
         const polygon = new Polygon([coords]);
-
-        const feature = new Feature({
-            geometry: polygon,
-        });
+        const feature = new Feature({ geometry: polygon });
 
         feature.set("id", item.id);
         feature.set("name", item.name);
@@ -426,35 +402,17 @@ const DroneDashboard = () => {
         //console.log(savedSourceRef.current.getFeatures())
     };
 
-    const geofenceStyle = new Style({
-        stroke: new Stroke({
-            color: 'rgba(0, 123, 255, 0.5)',
-            width: 1.5,
-            lineDash: [6, 6]
-        }),
-        fill: new Fill({
-            color: 'rgba(0, 123, 255, 0.07)',
-        }),
-    })
-
     return (
         <div
             className="bg-dark text-light"
-            style={{
-                height: 'calc(100vh - 57px)'
-            }}
+            style={{ height: 'calc(100vh - 57px)' }}
         >
 
-            {/*SERVER OFFLINE*/}
+            {/* SERVER OFFLINE */}
             {!serverConnected && (
-
                 <div className="h-100 d-flex align-items-center justify-content-center">
-
                     <div className="text-center">
-
-                        <h1 className="mb-4">
-                            DRONE DASHBOARD
-                        </h1>
+                        <h1 className="mb-4">DRONE DASHBOARD</h1>
 
                         <p className={`fs-3 ${isRetrying ? "text-warning" : "text-danger"}`}>
                             {isRetrying ? "" : "Server non connesso"}
@@ -479,27 +437,17 @@ const DroneDashboard = () => {
                                 ? "Connessione in corso..."
                                 : "In attesa di connessione al server"}
                         </div>
-
                     </div>
-
                 </div>
-
             )}
 
-            {/*SERVER ONLINE / DRONE OFFLINE*/}
+            {/* SERVER ONLINE / DRONE OFFLINE */}
             {serverConnected && !droneConnected && (
-
                 <div className="h-100 d-flex align-items-center justify-content-center">
-
                     <div className="text-center">
+                        <h1 className="mb-4">DRONE DASHBOARD</h1>
 
-                        <h1 className="mb-4">
-                            DRONE DASHBOARD
-                        </h1>
-
-                        <p className="fs-3 text-success">
-                            Server connesso
-                        </p>
+                        <p className="fs-3 text-success">Server connesso</p>
 
                         <p className={`fs-5 ${isRetrying ? "text-warning" : "text-warning"}`}>
                             {isRetrying ? "" : "Attesa connessione drone..."}
@@ -528,51 +476,27 @@ const DroneDashboard = () => {
                 </div>
             )}
 
-            {/*DRONE ONLINE*/}
+            {/* DRONE ONLINE */}
             {serverConnected && droneConnected && (
-
                 <div className="d-flex h-100">
 
                     <div
                         className="border-end border-secondary p-3"
-                        style={{
-                            width: 260,
-                            background: '#111'
-                        }}
+                        style={{ width: 260, background: '#111' }}
                     >
-
-                        <h4 className="mb-4">
-                            DRONE STATUS
-                        </h4>
+                        <h4 className="mb-4">DRONE STATUS</h4>
 
                         <div
                             className="border border-secondary rounded p-3"
-                            style={{
-                                background: '#1a1a1a'
-                            }}
+                            style={{ background: '#1a1a1a' }}
                         >
-                            <div className="text-secondary small mb-2">
-                                Batteria
-                            </div>
+                            <div className="text-secondary small mb-2">Batteria</div>
 
-                            <div
-                                className="fw-bold mb-3"
-                                style={{
-                                    fontSize: 42
-                                }}
-                            >
+                            <div className="fw-bold mb-3" style={{ fontSize: 42 }}>
                                 {battery}%
                             </div>
 
-                            <div
-                                style={{
-                                    height: 12,
-                                    background: '#333',
-                                    borderRadius: 10,
-                                    overflow: 'hidden'
-                                }}
-                            >
-
+                            <div style={{ height: 12, background: '#333', borderRadius: 10, overflow: 'hidden' }}>
                                 <div
                                     style={{
                                         width: `${battery}%`,
@@ -586,7 +510,6 @@ const DroneDashboard = () => {
                                         transition: '0.3s'
                                     }}
                                 />
-
                             </div>
                         </div>
 
@@ -597,25 +520,18 @@ const DroneDashboard = () => {
                         >
                             Centra Drone
                         </Button>
+
                         <div className="mt-3">
-                            <div className="text-secondary small mb-2">
-                                Geofence attivi
-                            </div>
+                            <div className="text-secondary small mb-2">Geofence attivi</div>
 
                             {activeGeofences.length === 0 ? (
-                                <div className="text-secondary small">
-                                    Nessuna zona attiva
-                                </div>
+                                <div className="text-secondary small">Nessuna zona attiva</div>
                             ) : (
                                 activeGeofences.map(gf => (
                                     <div
                                         key={gf.id}
                                         className="d-flex align-items-center justify-content-between text-light small mb-1"
-                                        style={{
-                                            background: '#222',
-                                            padding: '6px 8px',
-                                            borderRadius: 6
-                                        }}
+                                        style={{ background: '#222', padding: '6px 8px', borderRadius: 6 }}
                                     >
                                         <span>{gf.name}</span>
                                         <span style={{ color: '#28a745' }}>●</span>
@@ -635,9 +551,11 @@ const DroneDashboard = () => {
 
                             <div className="d-flex flex-column gap-3" style={{ width: 420 }}>
 
-                                <div className="border border-secondary rounded p-3" style={{ background: '#111', height: '50%' }}>
+                                <div
+                                    className="border border-secondary rounded p-3"
+                                    style={{ background: '#111', height: '50%' }}
+                                >
                                     <h5>Temperatura</h5>
-
                                     <ResponsiveContainer width="100%" height="85%">
                                         <LineChart data={temperatureData}>
                                             <CartesianGrid stroke="#333" />
@@ -647,12 +565,13 @@ const DroneDashboard = () => {
                                             <Line type="monotone" dataKey="value" stroke="#ff7300" strokeWidth={3} dot={false} />
                                         </LineChart>
                                     </ResponsiveContainer>
-
                                 </div>
 
-                                <div className="border border-secondary rounded p-3" style={{ background: '#111', height: '50%' }}>
+                                <div
+                                    className="border border-secondary rounded p-3"
+                                    style={{ background: '#111', height: '50%' }}
+                                >
                                     <h5>Umidità</h5>
-
                                     <ResponsiveContainer width="100%" height="85%">
                                         <LineChart data={humidityData}>
                                             <CartesianGrid stroke="#333" />
@@ -662,7 +581,6 @@ const DroneDashboard = () => {
                                             <Line type="monotone" dataKey="value" stroke="#00c2ff" strokeWidth={3} dot={false} />
                                         </LineChart>
                                     </ResponsiveContainer>
-
                                 </div>
 
                             </div>
@@ -671,14 +589,8 @@ const DroneDashboard = () => {
 
                         <div
                             className="border border-secondary rounded mt-3 d-flex flex-column"
-                            style={{
-                                background: '#111',
-                                height: '35%',
-                                minHeight: 0,
-                                overflow: 'hidden'
-                            }}
+                            style={{ background: '#111', height: '35%', minHeight: 0, overflow: 'hidden' }}
                         >
-
                             <div className="p-3 border-bottom border-secondary">
                                 <h5 className="mb-0">LOG</h5>
                             </div>
@@ -686,10 +598,7 @@ const DroneDashboard = () => {
                             <div
                                 ref={logContainerRef}
                                 className="p-3 flex-grow-1"
-                                style={{
-                                    overflowY: 'auto',
-                                    minHeight: 0
-                                }}
+                                style={{ overflowY: 'auto', minHeight: 0 }}
                             >
                                 {logs.map((l, i) => (
                                     <div key={i} className="small text-secondary mb-1">
@@ -697,13 +606,11 @@ const DroneDashboard = () => {
                                     </div>
                                 ))}
                             </div>
-
                         </div>
 
                     </div>
 
                 </div>
-
             )}
         </div>
     );
