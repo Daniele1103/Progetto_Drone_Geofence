@@ -533,7 +533,6 @@ const DroneDashboard = () => {
 
                 <div className="d-flex h-100">
 
-                    {/*LEFT PANEL*/}
                     <div
                         className="border-end border-secondary p-3"
                         style={{
@@ -546,14 +545,12 @@ const DroneDashboard = () => {
                             DRONE STATUS
                         </h4>
 
-                        {/* BATTERY */}
                         <div
                             className="border border-secondary rounded p-3"
                             style={{
                                 background: '#1a1a1a'
                             }}
                         >
-
                             <div className="text-secondary small mb-2">
                                 Batteria
                             </div>
@@ -592,7 +589,7 @@ const DroneDashboard = () => {
 
                             </div>
                         </div>
-                        {/* CENTER BUTTON */}
+
                         <Button
                             variant="primary"
                             onClick={centerOnDrone}
@@ -628,7 +625,6 @@ const DroneDashboard = () => {
                         </div>
                     </div>
 
-                    {/*MAIN*/}
                     <div className="flex-grow-1 p-3 d-flex flex-column">
 
                         <div className="d-flex gap-3" style={{ height: '65%' }}>

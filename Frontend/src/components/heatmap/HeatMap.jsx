@@ -12,7 +12,7 @@ import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { fromLonLat } from "ol/proj";
 
-import GradientLegend from "./GradientLegend";
+import GradientLegend from "../analytics/GradientLegend";
 
 const GPS_SCALE = chroma.scale(['#00007f', '#0000ff', '#0080ff', '#00ffff', '#00ff80', '#00ff00', '#80ff00', '#ffff00', '#ff8000', '#ff0000', '#7f0000']);
 
@@ -100,14 +100,12 @@ const HeatMap = () => {
     return (
         <div className="d-flex bg-dark text-light" style={{ height: "calc(100vh - 57px)" }}>
 
-            {/* SIDEBAR */}
             <div
                 className="p-3 border-end border-secondary d-flex flex-column"
                 style={{ width: 300, overflowY: "auto", background: "#111" }}
             >
                 <h5 className="mb-3">Seleziona Data</h5>
 
-                {/* DATE PICKER */}
                 <div
                     className="mb-3 rounded"
                     style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", overflow: "hidden" }}
@@ -171,7 +169,6 @@ const HeatMap = () => {
 
                 <hr className="border-secondary" />
 
-                {/* TOGGLE GPS */}
                 <div className="d-flex flex-column gap-2 mb-3">
                     <button
                         className={`btn w-100 d-flex align-items-center gap-2 ${showGps ? "btn-primary" : "btn-outline-primary"}`}
@@ -196,7 +193,6 @@ const HeatMap = () => {
 
             </div>
 
-            {/* MAPPA */}
             <div className="flex-grow-1 p-2 d-flex flex-column">
                 <h4 className="mb-2">HeatMap GPS</h4>
                 <div

@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Geofence from './components/Geofence';
-import HeatMap from './components/HeatMap'
 import { Container } from 'react-bootstrap';
+import Navbar from './components/navbar/Navbar';
+import GeofenceManager from './components/geofencemanager/GeofenceManager';
+import HeatMap from './components/heatmap/HeatMap'
+import DroneDashboard from './components/dronedashboard/DroneDashboard';
+import DroneTrips from './components/trips/DroneTrips';
+import GeofenceAnalytics from './components/analytics/GeofenceAnalytics';
 import axios from "axios";
-import DroneDashboard from './components/DroneDashboard';
-import DroneTrips from './components/DroneTrips';
-import GeofenceAnalytics from './components/GeofenceAnalytics';
 
 const Welcome = () => (
   <div className="welcome-container">
@@ -23,7 +23,7 @@ function InnerHome() {
       <Container fluid className="p-0 text-center">
         <Routes>
           <Route path="/" element={<Welcome />} />
-          <Route path="/map" element={<Geofence />} />
+          <Route path="/geofencemanager" element={<GeofenceManager />} />
           <Route path="/drone" element={<DroneDashboard />} />
           <Route path="/heatmap" element={<HeatMap />} />
           <Route path="/geofenceanalytics" element={<GeofenceAnalytics />} />

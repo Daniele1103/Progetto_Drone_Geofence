@@ -334,7 +334,7 @@ const GeofenceAnalytics = () => {
                         />
                     </div>
                 </div>
-                
+
             </div>
 
             <div

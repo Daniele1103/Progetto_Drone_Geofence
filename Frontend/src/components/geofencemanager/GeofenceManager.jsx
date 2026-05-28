@@ -1,10 +1,10 @@
 //quando uso gli oggetti OL questi iniettano, dentro al contenitore target che gli passo, i canvas e altri tag html e scaricano le immagini e i dati da inserirci dal server (in questo caso OpenStreetMap) e inoltre hanno bisogno del file .css di OL per visualizzare bene quello che viene iniettato
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, ButtonGroup } from 'react-bootstrap';
-import initialGeojson from "../assets/Geojson.json"
+import initialGeojson from "../../assets/Geojson.json"
 import axios from "axios";
 import GeofenceCard from "./GeofenceCard"
-import './Geofence.css'
+import './GeofenceManager.css'
 
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -22,7 +22,7 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Polygon from 'ol/geom/Polygon';
 
-const Geofence = () => {
+const GeofenceManager = () => {
     const mapElement = useRef();    // Il div dove carico la mappa
     const mapRef = useRef();    // è l'oggetto map vero e proprio (la mappa è pesante, meglio non triggerare ad ogni rirender)
 
@@ -573,13 +573,6 @@ const Geofence = () => {
 
                 <hr className="border-secondary" />
 
-                <Button variant="outline-light" className="w-100 mb-2">
-                    Visualizza Temperatura
-                </Button>
-
-                <Button variant="outline-light" className="w-100 mb-2">
-                    Visualizza Umidità
-                </Button>
             </div>
 
             {/* MAPPA */}
@@ -648,4 +641,4 @@ const Geofence = () => {
     );
 };
 
-export default Geofence;
+export default GeofenceManager;
