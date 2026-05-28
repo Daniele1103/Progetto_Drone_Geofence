@@ -306,36 +306,35 @@ const GeofenceAnalytics = () => {
                     style={{ minHeight: 0 }}
                 />
 
-                {selectedGfId && (
-                    <div className="d-flex align-items-center gap-3 mt-2 flex-wrap">
-                        <div className="btn-group btn-group-sm" role="group" aria-label="Seleziona layer">
-                            <button
-                                type="button"
-                                className={`btn ${activeLayer === "temperature" ? "btn-warning" : "btn-outline-secondary"}`}
-                                onClick={() => handleLayerToggle("temperature")}
-                            >
-                                Temperatura
-                            </button>
-                            <button
-                                type="button"
-                                className={`btn ${activeLayer === "humidity" ? "btn-info" : "btn-outline-secondary"}`}
-                                onClick={() => handleLayerToggle("humidity")}
-                            >
-                                Umidità
-                            </button>
-                        </div>
-
-                        <div style={{ width: "30%" }}>
-                            <GradientLegend
-                                gradient={activeLayer === "temperature" ? tempScale.colors(20) : humScale.colors(20)}
-                                min={activeLayer === "temperature" ? -10 : 0}
-                                max={activeLayer === "temperature" ? 50 : 100}
-                                unit={activeLayer === "temperature" ? "°C" : "%"}
-                                label={activeLayer === "temperature" ? "Temperatura" : "Umidità"}
-                            />
-                        </div>
+                <div className="d-flex align-items-center gap-3 mt-2 flex-wrap">
+                    <div className="btn-group btn-group-sm" role="group" aria-label="Seleziona layer">
+                        <button
+                            type="button"
+                            className={`btn ${activeLayer === "temperature" ? "btn-warning" : "btn-outline-secondary"}`}
+                            onClick={() => handleLayerToggle("temperature")}
+                        >
+                            Temperatura
+                        </button>
+                        <button
+                            type="button"
+                            className={`btn ${activeLayer === "humidity" ? "btn-info" : "btn-outline-secondary"}`}
+                            onClick={() => handleLayerToggle("humidity")}
+                        >
+                            Umidità
+                        </button>
                     </div>
-                )}
+
+                    <div style={{ width: "30%" }}>
+                        <GradientLegend
+                            gradient={activeLayer === "temperature" ? tempScale.colors(20) : humScale.colors(20)}
+                            min={activeLayer === "temperature" ? -10 : 0}
+                            max={activeLayer === "temperature" ? 50 : 100}
+                            unit={activeLayer === "temperature" ? "°C" : "%"}
+                            label={activeLayer === "temperature" ? "Temperatura" : "Umidità"}
+                        />
+                    </div>
+                </div>
+                
             </div>
 
             <div
