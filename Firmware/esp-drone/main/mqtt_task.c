@@ -18,6 +18,7 @@ static volatile bool mqtt_connected = false;
 
 static void mqtt_publish_status(bool online);   // forward declaration
 
+
 static bool sta_has_ip(void)
 {
     esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
@@ -84,13 +85,12 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
     }
 
     default:
-        break;  
+        break;   
     }
 }
 
 static void mqtt_app_start(void)
 {
-
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER_URI,
         .session.last_will.topic = "drone/status",
@@ -130,12 +130,10 @@ static void mqtt_init_task(void *pvParameters)
     vTaskDelete(NULL);
 }
 
-
 void network_mqtt_init(void)
 {
     xTaskCreate(mqtt_init_task, "MqttInitTask", 4096, NULL, 1, NULL);
 }
-
 
 void mqtt_publish_gps(float lat, float lng, float alt, int satellites, float hdop)
 {
@@ -160,7 +158,6 @@ void mqtt_publish_gps(float lat, float lng, float alt, int satellites, float hdo
         ESP_LOGI(TAG, "[GPS] -> drone/gps  %s", payload);
     }
 }
-
 
 void mqtt_publish_temperature(float temperature, float lat, float lng, float alt)
 {
@@ -210,7 +207,6 @@ void mqtt_publish_humidity(float humidity, float lat, float lng, float alt)
         ESP_LOGI(TAG, "[DHT] -> drone/hum  %s", payload);
     }
 }
-
 
 void mqtt_publish_battery(float battery_value)
 {

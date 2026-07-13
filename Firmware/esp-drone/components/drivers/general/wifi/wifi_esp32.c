@@ -36,9 +36,7 @@ static char WIFI_PWD[64] = CONFIG_WIFI_PASSWORD;
 static uint8_t WIFI_CH = CONFIG_WIFI_CHANNEL;
 #define WIFI_MAX_STA_CONN CONFIG_WIFI_MAX_STA_CONN
 
-// AGGIUNTO: credenziali della rete (hotspot del PC) verso cui il drone si
-// collega come client (STA), in aggiunta al suo AP di controllo. Serve per
-// raggiungere il broker MQTT sul PC e mandare i dati di telemetria (GPS/DHT).
+// AGGIUNTO
 #define WIFI_STA_SSID     "PC-DANI"
 #define WIFI_STA_PASS     "ciaodani"
 
