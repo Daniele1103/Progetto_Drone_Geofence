@@ -57,8 +57,8 @@ void app_main()
         while (1);//if  firmware is running on the wrong hardware, Halt
     }
 
-    xTaskCreate(telemetry_sensors_task, "TelemetryTask", 4096, NULL, 2, NULL);
     /*launch the system task */
     systemLaunch();
 
+    xTaskCreate(telemetry_sensors_task, "TelemetryTask", 4096, NULL, 2, NULL);
 }

@@ -36,6 +36,12 @@ static char WIFI_PWD[64] = CONFIG_WIFI_PASSWORD;
 static uint8_t WIFI_CH = CONFIG_WIFI_CHANNEL;
 #define WIFI_MAX_STA_CONN CONFIG_WIFI_MAX_STA_CONN
 
+// AGGIUNTO: credenziali della rete (hotspot del PC) verso cui il drone si
+// collega come client (STA), in aggiunta al suo AP di controllo. Serve per
+// raggiungere il broker MQTT sul PC e mandare i dati di telemetria (GPS/DHT).
+#define WIFI_STA_SSID     "PC-DANI"
+#define WIFI_STA_PASS     "ciaodani"
+
 #ifndef MAC2STR
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -74,6 +80,20 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
     } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
         wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *) event_data;
         DEBUG_PRINT_LOCAL("station" MACSTR "leave, AID=%d", MAC2STR(event->mac), event->aid);
+
+    } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        // AGGIUNTO
+        DEBUG_PRINT_LOCAL("STA disconnessa dall'hotspot, ritento connessione");
+        esp_wifi_connect();
+    }
+}
+
+// AGGIUNTO
+static void ip_event_handler(void *arg, esp_event_base_t event_base,
+                             int32_t event_id, void *event_data)
+{
+    if (event_id == IP_EVENT_STA_GOT_IP) {
+        DEBUG_PRINT_LOCAL("STA connessa all'hotspot, IP ottenuto - MQTT raggiungibile");
     }
 }
 
@@ -265,6 +285,10 @@ void wifiInit(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ap_netif = esp_netif_create_default_wifi_ap();
+
+    // AGGIUNTO
+    esp_netif_create_default_wifi_sta();
+
     uint8_t mac[6];
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -273,6 +297,13 @@ void wifiInit(void)
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                     ESP_EVENT_ANY_ID,
                     &wifi_event_handler,
+                    NULL,
+                    NULL));
+
+    // AGGIUNTO
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                    IP_EVENT_STA_GOT_IP,
+                    &ip_event_handler,
                     NULL,
                     NULL));
 
@@ -295,10 +326,30 @@ void wifiInit(void)
         wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     }
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    // AGGIUNTO
+    wifi_config_t sta_config = {
+        .sta = {
+            .ssid = WIFI_STA_SSID,
+            .password = WIFI_STA_PASS,
+        },
+    };
+
+    // MODIFICATO: WIFI_MODE_AP -> WIFI_MODE_APSTA
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
+
+    // AGGIUNTO
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+
+    // AGGIUNTO
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
+
     ESP_ERROR_CHECK(esp_wifi_start());
     esp_wifi_set_channel(WIFI_CH, WIFI_SECOND_CHAN_NONE);
+
+    // AGGIUNTO
+    ESP_ERROR_CHECK(esp_wifi_connect());
+
     espnow_config_t espnow_config = ESPNOW_INIT_CONFIG_DEFAULT();
     espnow_init(&espnow_config);
     esp_event_handler_register(ESP_EVENT_ESPNOW, ESP_EVENT_ANY_ID, app_espnow_event_handler, NULL);
