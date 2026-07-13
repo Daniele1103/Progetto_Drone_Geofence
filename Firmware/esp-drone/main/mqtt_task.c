@@ -16,8 +16,8 @@ static const char *TAG = "MQTT";
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 static volatile bool mqtt_connected = false;
 
-static void mqtt_publish_status(bool online);   // forward declaration
-
+// Per il compilatore
+static void mqtt_publish_status(bool online);
 
 static bool sta_has_ip(void)
 {
@@ -85,12 +85,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
     }
 
     default:
-        break;   
+        break;
     }
 }
 
 static void mqtt_app_start(void)
 {
+    // Last Will and Testament: se il drone si disconnette in modo anomalo, il BROKER pubblica lui stesso
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER_URI,
         .session.last_will.topic = "drone/status",
@@ -113,7 +114,7 @@ static void mqtt_app_start(void)
     esp_mqtt_client_start(mqtt_client);
 }
 
-
+// Task DEDICATO che aspetta l'IP e avvia MQTT - serve solo in fase di inizio per assicurarsi che la cofigurazione del wifi sia completa prima di tentare la connessione mqtt
 static void mqtt_init_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "[WIFI] in attesa che la STA ottenga un IP...");
@@ -129,6 +130,7 @@ static void mqtt_init_task(void *pvParameters)
 
     vTaskDelete(NULL);
 }
+
 
 void network_mqtt_init(void)
 {
@@ -182,7 +184,6 @@ void mqtt_publish_temperature(float temperature, float lat, float lng, float alt
         ESP_LOGI(TAG, "[DHT] -> drone/temp  %s", payload);
     }
 }
-
 
 void mqtt_publish_humidity(float humidity, float lat, float lng, float alt)
 {
