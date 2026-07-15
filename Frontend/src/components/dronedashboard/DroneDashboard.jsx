@@ -183,21 +183,21 @@ const DroneDashboard = () => {
             setServerConnected(false);
             setDroneConnected(false);
             wsRef.current = null;
-            setBattery(0);
-            setHumidityData([]);
-            setTemperatureData([]);
-            setLogs([]);
-            setActiveGeofences([]);
+            //setBattery(0);
+            //setHumidityData([]);
+            //setTemperatureData([]);
+            //setLogs([]);
+            //setActiveGeofences([]);
         };
 
         ws.onerror = () => {
             setServerConnected(false);
             setDroneConnected(false);
-            setBattery(0);
-            setHumidityData([]);
-            setTemperatureData([]);
-            setLogs([]);
-            setActiveGeofences([]);
+            //setBattery(0);
+            //setHumidityData([]);
+            //setTemperatureData([]);
+            //setLogs([]);
+            //setActiveGeofences([]);
         };
 
         ws.onmessage = (event) => {
@@ -363,10 +363,10 @@ const DroneDashboard = () => {
         droneSourceRef.current.clear();
         droneFeatureRef.current = null;
 
-        setBattery(0);
-        setHumidityData([]);
-        setTemperatureData([]);
-        setLogs([]);
+        //setBattery(0);
+        //setHumidityData([]);
+        //setTemperatureData([]);
+        //setLogs([]);
         setActiveGeofences([]);
     };
 

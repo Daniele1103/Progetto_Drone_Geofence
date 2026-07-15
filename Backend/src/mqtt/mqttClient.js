@@ -174,7 +174,7 @@ function handleMessage(topic, data) {
 
             const batteryPercent = Math.round(voltageToPercent(data.value));
 
-            console.log("Batteria perc: " + batteryPercent+ " voltage: "+ data.value)
+            //console.log("Batteria perc: " + batteryPercent+ " voltage: "+ data.value)
             broadcast({
                 type: "battery",
                 value: batteryPercent
