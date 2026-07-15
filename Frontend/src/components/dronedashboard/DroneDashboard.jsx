@@ -209,13 +209,14 @@ const DroneDashboard = () => {
                     setDroneConnected(data.droneOnline);
                     break;
 
-                case "drone_status":
-                    setDroneConnected(data.connected);
+                case "status":
+                    console.log("PROVA: "+ data.online)
+                    setDroneConnected(data.online);
                     setLogs(prev => [
                         ...prev,
                         {
                             time: new Date().toLocaleTimeString(),
-                            msg: data.connected
+                            msg: data.online
                                 ? "Drone collegato"
                                 : "Drone scollegato"
                         }
@@ -365,7 +366,7 @@ const DroneDashboard = () => {
         setBattery(0);
         setHumidityData([]);
         setTemperatureData([]);
-        //setLogs([]);
+        setLogs([]);
         setActiveGeofences([]);
     };
 

@@ -51,12 +51,13 @@ export function broadcast(data) {
     // aggiorna stato interno se arriva status drone
     if (data.type === "status") {
         droneOnline = data.online;
+        //console.log("ciao")
 
         // se drone OFF → notifica subito tutti i client e
         if (!droneOnline) {
             const offlineMsg = JSON.stringify({
-                type: "drone_status",
-                connected: false
+                type: "status",
+                online: false
             });
 
             for (const client of clients) {
@@ -68,12 +69,13 @@ export function broadcast(data) {
         }
     }
 
-    if (!droneOnline) return;
+    if (!droneOnline) return;       //come sicurezza nel caso la varaibile sia false ma il drone continuasse ad andare
 
     // broadcast normale dati telemetry
     for (const client of clients) {
         if (client.readyState === 1) {      // con 1 connessione attiva
             client.send(message);
+            //console.log(message)
         }
     }
 }
