@@ -76,10 +76,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
         ESP_LOGE(TAG, "[MQTT] ERRORE - tipo=%s", mqtt_error_type_str(event->error_handle->error_type));
         if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT)
         {
-            ESP_LOGE(TAG, "[MQTT] dettaglio trasporto TCP: esp_tls_err=0x%x, tls_stack_err=0x%x, sock_errno=%d",
-                     event->error_handle->esp_tls_last_esp_err,
-                     event->error_handle->esp_tls_stack_err,
-                     event->error_handle->esp_transport_sock_errno);
+            ESP_LOGE(TAG, "[MQTT] dettaglio trasporto TCP: esp_tls_err=0x%x, tls_stack_err=0x%x, sock_errno=%d", event->error_handle->esp_tls_last_esp_err, event->error_handle->esp_tls_stack_err, event->error_handle->esp_transport_sock_errno);
         }
         break;
     }
@@ -94,6 +91,7 @@ static void mqtt_app_start(void)
     // Last Will and Testament: se il drone si disconnette in modo anomalo, il BROKER pubblica lui stesso
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER_URI,
+        .session.keepalive = 15,
         .session.last_will.topic = "drone/status",
         .session.last_will.msg = "{\"online\":false}",
         .session.last_will.msg_len = 0,
@@ -146,9 +144,7 @@ void mqtt_publish_gps(float lat, float lng, float alt, int satellites, float hdo
     }
 
     char payload[128];
-    snprintf(payload, sizeof(payload),
-             "{\"lat\":%.6f,\"lng\":%.6f,\"alt\":%.2f,\"sat\":%d,\"hdop\":%.2f}",
-             lat, lng, alt, satellites, hdop);
+    snprintf(payload, sizeof(payload), "{\"lat\":%.6f,\"lng\":%.6f,\"alt\":%.2f,\"sat\":%d,\"hdop\":%.2f}", lat, lng, alt, satellites, hdop);
 
     int msg_id = esp_mqtt_client_publish(mqtt_client, "drone/gps", payload, 0, 1, 0);
     if (msg_id < 0)
@@ -170,9 +166,7 @@ void mqtt_publish_temperature(float temperature, float lat, float lng, float alt
     }
 
     char payload[128];
-    snprintf(payload, sizeof(payload),
-             "{\"value\":%.1f,\"lat\":%.6f,\"lng\":%.6f,\"alt\":%.2f}",
-             temperature, lat, lng, alt);
+    snprintf(payload, sizeof(payload), "{\"value\":%.1f,\"lat\":%.6f,\"lng\":%.6f,\"alt\":%.2f}", temperature, lat, lng, alt);
 
     int msg_id = esp_mqtt_client_publish(mqtt_client, "drone/temp", payload, 0, 1, 0);
     if (msg_id < 0)
@@ -194,9 +188,7 @@ void mqtt_publish_humidity(float humidity, float lat, float lng, float alt)
     }
 
     char payload[128];
-    snprintf(payload, sizeof(payload),
-             "{\"value\":%.1f,\"lat\":%.6f,\"lng\":%.6f,\"alt\":%.2f}",
-             humidity, lat, lng, alt);
+    snprintf(payload, sizeof(payload), "{\"value\":%.1f,\"lat\":%.6f,\"lng\":%.6f,\"alt\":%.2f}", humidity, lat, lng, alt);
 
     int msg_id = esp_mqtt_client_publish(mqtt_client, "drone/hum", payload, 0, 1, 0);
     if (msg_id < 0)

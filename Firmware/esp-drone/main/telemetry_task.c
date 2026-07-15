@@ -18,19 +18,23 @@ extern void network_mqtt_init(void);
 extern void mqtt_publish_gps(float lat, float lng, float alt, int satellites, float hdop);
 extern void mqtt_publish_temperature(float temperature, float lat, float lng, float alt);
 extern void mqtt_publish_humidity(float humidity, float lat, float lng, float alt);
+
 extern void mqtt_publish_battery(float battery_value);
+extern float pmGetBatteryVoltage(void);
+static TickType_t last_battery = 0;
+static bool first_battery_read = true;
 
 static const char *TAG = "TELEMETRY";
 
 // GPS UART
-#define GPS_UART_PORT   UART_NUM_1
-#define GPS_RX_PIN      GPIO_NUM_38
-#define GPS_TX_PIN      GPIO_NUM_39
-#define GPS_BAUDRATE    115200
-#define GPS_BUF_SIZE    1024
+#define GPS_UART_PORT UART_NUM_1
+#define GPS_RX_PIN GPIO_NUM_38
+#define GPS_TX_PIN GPIO_NUM_39
+#define GPS_BAUDRATE 115200
+#define GPS_BUF_SIZE 1024
 
 // DHT AM2302
-#define DHT_PIN         GPIO_NUM_1
+#define DHT_PIN GPIO_NUM_1
 
 // Buffer NMEA
 static char nmea_sentence[128];
@@ -40,6 +44,7 @@ static int nmea_index = 0;
 static TickType_t last_gps_print = 0;
 
 // Ultima posizione GPS nota (con fix valido)
+static bool has_gps_fix = false;
 static float last_lat = 0.0f;
 static float last_lng = 0.0f;
 static float last_alt = 0.0f;
@@ -47,29 +52,37 @@ static float last_alt = 0.0f;
 // Parsing GPS
 static void parse_gps_sentence(char *sentence)
 {
-    switch (minmea_sentence_id(sentence, false)) {
+    switch (minmea_sentence_id(sentence, false))
+    {
 
-    case MINMEA_SENTENCE_GGA: {
+    case MINMEA_SENTENCE_GGA:
+    {
         struct minmea_sentence_gga frame;
 
-        if (minmea_parse_gga(&frame, sentence)) {
+        if (minmea_parse_gga(&frame, sentence))
+        {
 
-            if (xTaskGetTickCount() - last_gps_print >= pdMS_TO_TICKS(1000)) {
+            if (xTaskGetTickCount() - last_gps_print >= pdMS_TO_TICKS(1000))
+            {
                 last_gps_print = xTaskGetTickCount();
 
-                float latitude  = minmea_tocoord(&frame.latitude);
+                float latitude = minmea_tocoord(&frame.latitude);
                 float longitude = minmea_tocoord(&frame.longitude);
-                float altitude  = minmea_tofloat(&frame.altitude);
-                float hdop      = minmea_tofloat(&frame.hdop);
+                float altitude = minmea_tofloat(&frame.altitude);
+                float hdop = minmea_tofloat(&frame.hdop);
 
-                if (frame.fix_quality == 0) {
+                if (frame.fix_quality == 0)
+                {
                     ESP_LOGW(TAG, "GPS NO FIX LAT %.6f LON %.6f ALT %.2f m SAT %d HDOP %.2f", latitude, longitude, altitude, frame.satellites_tracked, hdop);
-                } else {
+                }
+                else
+                {
                     ESP_LOGI(TAG, "GPS FIX LAT %.6f LON %.6f ALT %.2f m SAT %d HDOP %.2f", latitude, longitude, altitude, frame.satellites_tracked, hdop);
 
                     last_lat = latitude;
                     last_lng = longitude;
                     last_alt = altitude;
+                    has_gps_fix = true;
 
                     mqtt_publish_gps(latitude, longitude, altitude, frame.satellites_tracked, hdop);
                 }
@@ -98,11 +111,10 @@ void telemetry_sensors_task(void *pvParameters)
     uart_config_t uart_config = {
         .baud_rate = GPS_BAUDRATE,
         .data_bits = UART_DATA_8_BITS,
-        .parity    = UART_PARITY_DISABLE,
+        .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_APB
-    };
+        .source_clk = UART_SCLK_APB};
 
     ESP_ERROR_CHECK(uart_param_config(GPS_UART_PORT, &uart_config));
 
@@ -117,48 +129,76 @@ void telemetry_sensors_task(void *pvParameters)
 
     TickType_t last_dht = 0;
 
-    while (1) {
+    while (1)
+    {
 
         // LETTURA GPS
         int len = uart_read_bytes(GPS_UART_PORT, gps_buffer, GPS_BUF_SIZE, pdMS_TO_TICKS(20));
 
-        for (int i = 0; i < len; i++) {
+        for (int i = 0; i < len; i++)
+        {
             char c = gps_buffer[i];
 
             // inizio sentence
-            if (c == '$') {
+            if (c == '$')
+            {
                 nmea_index = 0;
                 nmea_sentence[nmea_index++] = c;
+            }
+            else if (nmea_index > 0)
+            {
 
-            } else if (nmea_index > 0) {
-
-                if (c == '\n') {
+                if (c == '\n')
+                {
                     nmea_sentence[nmea_index] = '\0';
                     parse_gps_sentence(nmea_sentence);
                     nmea_index = 0;
-
-                } else {
-                    if (nmea_index < sizeof(nmea_sentence) - 1) {
+                }
+                else
+                {
+                    if (nmea_index < sizeof(nmea_sentence) - 1)
+                    {
                         nmea_sentence[nmea_index++] = c;
                     }
                 }
             }
         }
 
-        if (xTaskGetTickCount() - last_dht >= pdMS_TO_TICKS(2000)) {
+        if (xTaskGetTickCount() - last_dht >= pdMS_TO_TICKS(2000))
+        {
             last_dht = xTaskGetTickCount();
 
             esp_err_t ret = dht_read_float_data(DHT_TYPE_AM2301, DHT_PIN,
-                &humidity, &temperature);
+                                                &humidity, &temperature);
 
-            if (ret == ESP_OK) {
+            if (ret == ESP_OK)
+            {
                 ESP_LOGI(TAG, "AM2302 TEMP %.1f C HUM %.1f %%", temperature, humidity);
-
-                mqtt_publish_temperature(temperature, last_lat, last_lng, last_alt);
-                mqtt_publish_humidity(humidity, last_lat, last_lng, last_alt);
-            } else {
+                if (has_gps_fix)
+                {
+                    mqtt_publish_temperature(temperature, last_lat, last_lng, last_alt);
+                    mqtt_publish_humidity(humidity, last_lat, last_lng, last_alt);
+                }
+                else
+                {
+                    ESP_LOGD(TAG, "DHT letto ma GPS non ancora agganciato, publish rimandato");
+                }
+            }
+            else
+            {
                 ESP_LOGE(TAG, "Errore DHT: %s", esp_err_to_name(ret));
             }
+        }
+
+        if (xTaskGetTickCount() - last_battery >= pdMS_TO_TICKS(10000) || (first_battery_read == true))
+        {
+            first_battery_read = false;
+            last_battery = xTaskGetTickCount();
+
+            // Non bloccante, legge un valore (funzione già esistente nel framework espressifdrone)
+            float battery_voltage = pmGetBatteryVoltage();
+            ESP_LOGI(TAG, "Battery %.2f V", battery_voltage);
+            mqtt_publish_battery(battery_voltage);
         }
 
         vTaskDelay(pdMS_TO_TICKS(20));

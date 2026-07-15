@@ -127,7 +127,7 @@ const DroneDashboard = () => {
     useEffect(() => {
         if (!droneConnected) return;
 
-        // evita doppie init
+        // evita doppie inita
         if (mapRef.current) return;
 
         mapRef.current = new Map({
@@ -365,7 +365,7 @@ const DroneDashboard = () => {
         setBattery(0);
         setHumidityData([]);
         setTemperatureData([]);
-        setLogs([]);
+        //setLogs([]);
         setActiveGeofences([]);
     };
 

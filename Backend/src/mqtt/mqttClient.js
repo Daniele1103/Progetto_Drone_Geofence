@@ -22,6 +22,20 @@ const TOPICS = [
 let droneGeofenceState = [];
 export let lastGps = null;
 
+const batteryTable = [3.00, 3.78, 3.83, 3.87, 3.89, 3.92, 3.96, 4.00, 4.04, 4.10];  // fornita dal espdrone
+
+function voltageToPercent(voltage) {
+    if (voltage <= batteryTable[0]) return 0;
+    if (voltage >= batteryTable[9]) return 100;
+
+    for (let i = 0; i < 9; i++) {
+        if (voltage >= batteryTable[i] && voltage <= batteryTable[i + 1]) {
+            const fraction = (voltage - batteryTable[i]) / (batteryTable[i + 1] - batteryTable[i]);
+            return (i + fraction) * 10;
+        }
+    }
+    return 0;
+}
 // connect per connettermi
 client.on("connect", () => {
     console.log("Connesso a Mosquitto:", MQTT_URL);
@@ -158,9 +172,12 @@ function handleMessage(topic, data) {
 
         case "drone/battery":
 
+            const batteryPercent = Math.round(voltageToPercent(data.value));
+
+            console.log("Batteria perc: " + batteryPercent+ " voltage: "+ data.value)
             broadcast({
                 type: "battery",
-                value: data.value
+                value: batteryPercent
             });
 
             break;
