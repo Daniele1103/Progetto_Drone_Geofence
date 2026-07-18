@@ -59,6 +59,7 @@ const DroneDashboard = () => {
 
     const [activeGeofences, setActiveGeofences] = useState([]);
     const lastGpsRef = useRef(null);
+    const [gpsFixed, setGpsFixed] = useState(false);
 
     const geofenceStyle = new Style({
         stroke: new Stroke({
@@ -210,8 +211,12 @@ const DroneDashboard = () => {
                     break;
 
                 case "status":
-                    console.log("PROVA: " + data.online)
+                    //console.log("PROVA: " + data.online)
                     setDroneConnected(data.online);
+
+                    setActiveGeofences([]);
+                    lastGpsRef.current = null;
+
                     setLogs(prev => [
                         ...prev,
                         {
@@ -224,6 +229,8 @@ const DroneDashboard = () => {
                     break;
 
                 case "gps": {
+                    setGpsFixed(true);
+
                     const coord = fromLonLat([data.lng, data.lat]);
 
                     lastGpsRef.current = coord;
@@ -318,6 +325,8 @@ const DroneDashboard = () => {
                     break;
 
                 case "gps_status":
+                    setGpsFixed(data.value === 1);
+
                     if (data.value === 0) {
                         setLogs(prev => [
                             ...prev,
@@ -532,6 +541,22 @@ const DroneDashboard = () => {
                                     }}
                                 />
                             </div>
+                        </div>
+
+                        <div className="d-flex align-items-center gap-2 mt-3 mb-2">
+                            <span
+                                style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: '50%',
+                                    display: 'inline-block',
+                                    background: gpsFixed ? '#28a745' : '#dc3545',
+                                    transition: '0.3s'
+                                }}
+                            />
+                            <span className="text-secondary small">
+                                {gpsFixed ? 'GPS agganciato' : 'In attesa del GPS'}
+                            </span>
                         </div>
 
                         <Button
