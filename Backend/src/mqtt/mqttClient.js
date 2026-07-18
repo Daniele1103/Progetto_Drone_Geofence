@@ -16,7 +16,8 @@ const TOPICS = [
     "drone/temp",
     "drone/hum",
     "drone/battery",
-    "drone/status"
+    "drone/status",
+    "drone/gps_status"
 ];
 
 let droneGeofenceState = [];
@@ -178,6 +179,19 @@ function handleMessage(topic, data) {
             broadcast({
                 type: "battery",
                 value: batteryPercent
+            });
+
+            break;
+
+        case "drone/gps_status":
+        
+            const gps_status = data.value;
+
+            console.log("Valore GPS: "+gps_status);
+
+            broadcast({
+                type: "gps_status",
+                value: gps_status
             });
 
             break;

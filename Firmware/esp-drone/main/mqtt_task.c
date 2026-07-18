@@ -11,7 +11,7 @@
 static const char *TAG = "MQTT";
 
 // IP del PC sull'hotspot + porta reale
-#define MQTT_BROKER_URI   "mqtt://192.168.137.1:1883"
+#define MQTT_BROKER_URI "mqtt://192.168.137.1:1883"
 
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 static volatile bool mqtt_connected = false;
@@ -40,14 +40,17 @@ static const char *mqtt_error_type_str(esp_mqtt_error_type_t t)
 {
     switch (t)
     {
-    case MQTT_ERROR_TYPE_TCP_TRANSPORT: return "TCP_TRANSPORT";
-    case MQTT_ERROR_TYPE_CONNECTION_REFUSED: return "CONNECTION_REFUSED";
-    default: return "NONE/SCONOSCIUTO";
+    case MQTT_ERROR_TYPE_TCP_TRANSPORT:
+        return "TCP_TRANSPORT";
+    case MQTT_ERROR_TYPE_CONNECTION_REFUSED:
+        return "CONNECTION_REFUSED";
+    default:
+        return "NONE/SCONOSCIUTO";
     }
 }
 
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
-                                int32_t event_id, void *event_data)
+                               int32_t event_id, void *event_data)
 {
     switch (event_id)
     {
@@ -72,7 +75,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
 
     case MQTT_EVENT_ERROR:
     {
-        esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t) event_data;
+        esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
         ESP_LOGE(TAG, "[MQTT] ERRORE - tipo=%s", mqtt_error_type_str(event->error_handle->error_type));
         if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT)
         {
@@ -128,7 +131,6 @@ static void mqtt_init_task(void *pvParameters)
 
     vTaskDelete(NULL);
 }
-
 
 void network_mqtt_init(void)
 {
@@ -223,7 +225,6 @@ void mqtt_publish_battery(float battery_value)
     }
 }
 
-
 static void mqtt_publish_status(bool online)
 {
     if (!mqtt_connected && online)
@@ -236,4 +237,28 @@ static void mqtt_publish_status(bool online)
 
     int msg_id = esp_mqtt_client_publish(mqtt_client, "drone/status", payload, 0, 1, 1);
     ESP_LOGI(TAG, "[STATUS] -> drone/status  %s  (msg_id=%d)", payload, msg_id);
+}
+
+bool mqtt_publish_gps_status(int status)
+{
+    if (!mqtt_connected)
+    {
+        ESP_LOGD(TAG, "[LOG] MQTT non connesso, pubblicazione saltata");
+        return false;
+    }
+
+    char payload[32];
+    snprintf(payload, sizeof(payload), "{\"value\":%d}", status);
+
+    int msg_id = esp_mqtt_client_publish(mqtt_client, "drone/gps_status", payload, 0, 1, 0);
+    if (msg_id < 0)
+    {
+        ESP_LOGE(TAG, "[LOG] publish FALLITO su drone/gps_status");
+        return false;
+    }
+    else
+    {
+        ESP_LOGI(TAG, "[LOG] -> drone/gps_status  %s", payload);
+        return true;
+    }
 }

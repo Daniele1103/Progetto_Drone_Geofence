@@ -18,6 +18,7 @@ extern void network_mqtt_init(void);
 extern void mqtt_publish_gps(float lat, float lng, float alt, int satellites, float hdop);
 extern void mqtt_publish_temperature(float temperature, float lat, float lng, float alt);
 extern void mqtt_publish_humidity(float humidity, float lat, float lng, float alt);
+extern bool mqtt_publish_gps_status(int status);
 
 extern void mqtt_publish_battery(float battery_value);
 extern float pmGetBatteryVoltage(void);
@@ -48,6 +49,7 @@ static bool has_gps_fix = false;
 static float last_lat = 0.0f;
 static float last_lng = 0.0f;
 static float last_alt = 0.0f;
+static bool last_sent_gps_status = true;
 
 // Parsing GPS
 static void parse_gps_sentence(char *sentence)
@@ -73,10 +75,24 @@ static void parse_gps_sentence(char *sentence)
 
                 if (frame.fix_quality == 0)
                 {
+                    if (last_sent_gps_status)
+                    {
+                        if (mqtt_publish_gps_status(0))
+                        {
+                            last_sent_gps_status = false;
+                        }
+                    }
                     ESP_LOGW(TAG, "GPS NO FIX LAT %.6f LON %.6f ALT %.2f m SAT %d HDOP %.2f", latitude, longitude, altitude, frame.satellites_tracked, hdop);
                 }
                 else
                 {
+                    if (!last_sent_gps_status)
+                    {
+                        if (mqtt_publish_gps_status(1)) 
+                        {
+                            last_sent_gps_status = true;
+                        }
+                    }
                     ESP_LOGI(TAG, "GPS FIX LAT %.6f LON %.6f ALT %.2f m SAT %d HDOP %.2f", latitude, longitude, altitude, frame.satellites_tracked, hdop);
 
                     last_lat = latitude;

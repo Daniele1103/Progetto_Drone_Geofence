@@ -210,7 +210,7 @@ const DroneDashboard = () => {
                     break;
 
                 case "status":
-                    console.log("PROVA: "+ data.online)
+                    console.log("PROVA: " + data.online)
                     setDroneConnected(data.online);
                     setLogs(prev => [
                         ...prev,
@@ -315,6 +315,26 @@ const DroneDashboard = () => {
                     setActiveGeofences(prev =>
                         prev.filter(g => g.id !== data.zone.id)
                     );
+                    break;
+
+                case "gps_status":
+                    if (data.value === 0) {
+                        setLogs(prev => [
+                            ...prev,
+                            {
+                                time: new Date().toLocaleTimeString(),
+                                msg: `In attesa del GPS`
+                            }
+                        ].slice(-50));
+                    } else {
+                        setLogs(prev => [
+                            ...prev,
+                            {
+                                time: new Date().toLocaleTimeString(),
+                                msg: `GPS ottenuto`
+                            }
+                        ].slice(-50));
+                    }
                     break;
 
                 case "temperature":
