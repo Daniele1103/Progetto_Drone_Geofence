@@ -705,3 +705,12 @@ LOG_ADD(LOG_INT16, rateRoll, &stateCompressed.rateRoll)   // angular velocity - 
 LOG_ADD(LOG_INT16, ratePitch, &stateCompressed.ratePitch)
 LOG_ADD(LOG_INT16, rateYaw, &stateCompressed.rateYaw)
 LOG_GROUP_STOP(stateEstimateZ)
+
+// AGGIUNTO: getter di sola lettura, per esporre i comandi correnti alla
+// telemetria (MQTT) senza toccare la logica del commander/watchdog.
+// Copia soltanto i dati già calcolati, nessun effetto collaterale sul volo.
+void stabilizerGetSetpointAndControl(setpoint_t *setpointOut, control_t *controlOut)
+{
+    *setpointOut = setpoint;
+    *controlOut = control;
+}

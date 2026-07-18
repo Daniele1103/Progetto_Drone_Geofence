@@ -17,7 +17,8 @@ const TOPICS = [
     "drone/hum",
     "drone/battery",
     "drone/status",
-    "drone/gps_status"
+    "drone/gps_status",
+    "drone/commands"
 ];
 
 let droneGeofenceState = [];
@@ -194,6 +195,9 @@ function handleMessage(topic, data) {
                 value: gps_status
             });
 
+            break;
+        case "drone/commands":
+            console.log("Comandi: ", data)
             break;
 
         default:

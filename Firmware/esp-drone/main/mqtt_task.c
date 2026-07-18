@@ -262,3 +262,27 @@ bool mqtt_publish_gps_status(int status)
         return true;
     }
 }
+
+void mqtt_publish_commands(float thrust, float roll, float pitch, float yaw)
+{
+    if (!mqtt_connected)
+    {
+        ESP_LOGD(TAG, "[CMD] MQTT non connesso, pubblicazione saltata");
+        return;
+    }
+
+    char payload[128];
+    snprintf(payload, sizeof(payload),
+             "{\"thrust\":%.2f,\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}",
+             thrust, roll, pitch, yaw);
+
+    int msg_id = esp_mqtt_client_publish(mqtt_client, "drone/commands", payload, 0, 1, 0);
+    if (msg_id < 0)
+    {
+        ESP_LOGE(TAG, "[CMD] publish FALLITO su drone/commands");
+    }
+    else
+    {
+        ESP_LOGI(TAG, "[CMD] -> drone/commands  %s", payload);
+    }
+}

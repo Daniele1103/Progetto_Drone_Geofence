@@ -14,16 +14,24 @@
 #include "dht.h"
 #include "minmea.h"
 
+#include "stabilizer_types.h"
+
+
 extern void network_mqtt_init(void);
 extern void mqtt_publish_gps(float lat, float lng, float alt, int satellites, float hdop);
 extern void mqtt_publish_temperature(float temperature, float lat, float lng, float alt);
 extern void mqtt_publish_humidity(float humidity, float lat, float lng, float alt);
 extern bool mqtt_publish_gps_status(int status);
+extern void mqtt_publish_commands(float thrust, float roll, float pitch, float yaw);
+
+extern void stabilizerGetSetpointAndControl(setpoint_t *setpointOut, control_t *controlOut);
 
 extern void mqtt_publish_battery(float battery_value);
 extern float pmGetBatteryVoltage(void);
 static TickType_t last_battery = 0;
 static bool first_battery_read = true;
+
+static TickType_t last_commands = 0;
 
 static const char *TAG = "TELEMETRY";
 
@@ -88,7 +96,7 @@ static void parse_gps_sentence(char *sentence)
                 {
                     if (!last_sent_gps_status)
                     {
-                        if (mqtt_publish_gps_status(1)) 
+                        if (mqtt_publish_gps_status(1))
                         {
                             last_sent_gps_status = true;
                         }
@@ -215,6 +223,17 @@ void telemetry_sensors_task(void *pvParameters)
             float battery_voltage = pmGetBatteryVoltage();
             ESP_LOGI(TAG, "Battery %.2f V", battery_voltage);
             mqtt_publish_battery(battery_voltage);
+        }
+
+        if (xTaskGetTickCount() - last_commands >= pdMS_TO_TICKS(200))
+        {
+            last_commands = xTaskGetTickCount();
+
+            setpoint_t setpoint_copy;
+            control_t control_copy;
+            stabilizerGetSetpointAndControl(&setpoint_copy, &control_copy);
+
+            mqtt_publish_commands(control_copy.thrust, setpoint_copy.attitude.roll, setpoint_copy.attitude.pitch, setpoint_copy.attitude.yaw);
         }
 
         vTaskDelay(pdMS_TO_TICKS(20));
