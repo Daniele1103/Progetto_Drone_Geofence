@@ -279,7 +279,7 @@ void mqtt_publish_commands(float thrust, float roll, float pitch, float yaw)
     int msg_id = esp_mqtt_client_publish(mqtt_client, "drone/commands", payload, 0, 1, 0);
     if (msg_id < 0)
     {
-        ESP_LOGE(TAG, "[CMD] publish FALLITO su drone/commands");
+        //ESP_LOGE(TAG, "[CMD] publish FALLITO su drone/commands");
     }
     else
     {
