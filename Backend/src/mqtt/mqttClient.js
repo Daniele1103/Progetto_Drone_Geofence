@@ -4,7 +4,7 @@ import {
     saveTemperature,
     saveHumidity
 } from "../influx/influxClient.js";
-import {checkGeofences} from '../api/controllers/geofenceController.js';
+import { checkGeofences, computePredictedPoints } from '../api/controllers/geofenceController.js';
 import { broadcast } from "../ws/wsServer.js";
 
 const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";
@@ -76,15 +76,21 @@ function handleMessage(topic, data) {
                 type: "status",
                 online: data.online
             });
-            if(!data.online){
-                lastGps=null;
+            if (!data.online) {
+                lastGps = null;
             }
             break;
 
         case "drone/gps":
-            lastGps = data;
             checkGeofences(data.lng, data.lat)
                 .then((geofences) => {
+                    if (!lastGps) {
+                        broadcast({
+                            type: "geofence_snapshot",
+                            zones: geofences
+                        });
+
+                    }
 
                     const currentIds = geofences.map(g => g.id);
 
@@ -115,6 +121,7 @@ function handleMessage(topic, data) {
                     }
                     // stato attuale
                     console.log("CURRENT INSIDE GEOFENCES:", geofences);
+                    lastGps = data;
 
                     // aggiorna stato
                     droneGeofenceState = geofences;
@@ -185,11 +192,10 @@ function handleMessage(topic, data) {
             break;
 
         case "drone/gps_status":
-        
+
             const gps_status = data.value;
 
-            console.log("Valore GPS: "+gps_status);
-
+            //console.log("Valore GPS: "+gps_status);
             broadcast({
                 type: "gps_status",
                 value: gps_status
@@ -197,12 +203,17 @@ function handleMessage(topic, data) {
 
             break;
         case "drone/commands":
-            console.log("Comandi: ", data)
+            //console.log("Comandi: ", data)
+
+            const points = computePredictedPoints(lastGps, data);
+            broadcast({ type: "predicted_path", points });
+            //console.log("punti previsti: ", points)
             break;
 
         default:
             console.log("Topic non gestito:", topic);
     }
 }
+
 
 export default client;

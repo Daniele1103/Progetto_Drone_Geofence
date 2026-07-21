@@ -11,6 +11,7 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import Polygon from 'ol/geom/Polygon';
+import LineString from 'ol/geom/LineString';
 
 import Style from 'ol/style/Style';
 import CircleStyle from 'ol/style/Circle';
@@ -40,6 +41,8 @@ const DroneDashboard = () => {
 
     const droneSourceRef = useRef(new VectorSource());
     const droneFeatureRef = useRef(null);
+
+    const predictedSourceRef = useRef(new VectorSource());
 
     const wsRef = useRef(null);
 
@@ -140,7 +143,9 @@ const DroneDashboard = () => {
                 new VectorLayer({
                     source: droneSourceRef.current,
                 }),
-                // geofence salvati
+                new VectorLayer({
+                    source: predictedSourceRef.current,
+                }),
                 new VectorLayer({
                     source: geofenceSourceRef.current,
                     style: geofenceStyle
@@ -216,6 +221,8 @@ const DroneDashboard = () => {
 
                     setActiveGeofences([]);
                     lastGpsRef.current = null;
+                    droneSourceRef.current.clear();
+                    droneFeatureRef.current = null;
 
                     setLogs(prev => [
                         ...prev,
@@ -374,6 +381,10 @@ const DroneDashboard = () => {
                     setBattery(data.value);
                     break;
 
+                case "predicted_path":
+                    drawPredictedPath(data.points);
+                    break;
+
                 default:
                     break;
             }
@@ -430,6 +441,42 @@ const DroneDashboard = () => {
         geofenceSourceRef.current.addFeature(feature);
 
         //console.log(savedSourceRef.current.getFeatures())
+    };
+
+    const drawPredictedPath = (points) => {
+        predictedSourceRef.current.clear();
+
+        if (!lastGpsRef.current || !points || points.length === 0) return;
+
+        const predictedCoords = points.map(p => fromLonLat([p.lng, p.lat]));
+
+        const lineCoords = [lastGpsRef.current, ...predictedCoords];
+
+        const lineFeature = new Feature({
+            geometry: new LineString(lineCoords)
+        });
+        lineFeature.setStyle(new Style({
+            stroke: new Stroke({
+                color: 'rgba(255, 99, 99, 0.9)',
+                width: 2,
+                lineDash: [4, 6]
+            })
+        }));
+        predictedSourceRef.current.addFeature(lineFeature);
+
+        predictedCoords.forEach((coord) => {
+            const pointFeature = new Feature({
+                geometry: new Point(coord)
+            });
+            pointFeature.setStyle(new Style({
+                image: new CircleStyle({
+                    radius: 6,
+                    fill: new Fill({ color: 'rgba(255, 99, 99, 0.55)' }),
+                    stroke: new Stroke({ color: 'rgba(255, 99, 99, 0.9)', width: 1.5 })
+                })
+            }));
+            predictedSourceRef.current.addFeature(pointFeature);
+        });
     };
 
     return (

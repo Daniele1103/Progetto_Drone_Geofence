@@ -1,4 +1,5 @@
 import pool from '../../postgis/dbpg.js';
+import { computeDestinationPoint } from "geolib";
 
 export const createGeofence = async (req, res) => {
     try {
@@ -105,4 +106,35 @@ export async function checkGeofencesBulk(points) {
     `);
 
     return result.rows;
+}
+
+export function computePredictedPoints(gps, commands) {
+    const isZeroCommand = commands.roll === 0 && commands.pitch === 0;
+    if (!gps || !commands || isZeroCommand) return [];
+
+    const pitch = commands.pitch;
+    const roll = commands.roll;
+
+    const deadzone = 2;
+    if (Math.abs(pitch) < deadzone && Math.abs(roll) < deadzone) {
+        return [];
+    }
+    const forwardComponent = -Math.tan(pitch * Math.PI / 180);
+    const rightComponent = Math.tan(roll * Math.PI / 180);
+
+    const bearingRad = Math.atan2(rightComponent, forwardComponent);
+    let bearingDeg = bearingRad * 180 / Math.PI;
+    if (bearingDeg < 0) bearingDeg += 360;
+
+    const STEP_METERS = 10;   // distanza fissa tra un punto e il successivo
+
+    const points = [];
+    let current = { latitude: gps.lat, longitude: gps.lng };
+
+    for (let i = 1; i <= 3; i++) {
+        current = computeDestinationPoint(current, STEP_METERS, bearingDeg);
+        points.push({ lat: current.latitude, lng: current.longitude });
+    }
+
+    return points;
 }
