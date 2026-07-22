@@ -27,40 +27,40 @@ Progetto_Drone_Geofence/
 ## Prerequisiti
 
 - **Docker Desktop** installato e avviato
-- **Node.js** (v18+) e **npm**, per far girare il frontend (e il simulatore, se lo usi)
+- **Node.js** (v18+) e **npm**, per far girare il frontend
 
-## 1. Clona il progetto
+## 1. Clonazione del progetto
 
 ```bash
 git clone <url-del-repository>
 cd Progetto_Drone_Geofence
 ```
 
-## 2. Crea il file `.env`
+## 2. Creazione file `.env`
 
-Il file `.env` non è incluso nel repository (contiene credenziali). Crealo nella cartella principale del progetto con questo contenuto, sostituendo i valori dove indicato:
+Il file `.env` non è incluso nel repository. Bisogna crearlo nella cartella principale del progetto con questo contenuto, sostituendo i valori dove indicato:
 
 ```dotenv
-# --- POSTGRES / POSTGIS ---
+# POSTGRES / POSTGIS
 POSTGRES_USER=user_admin
 POSTGRES_PASSWORD=scegli_una_password
 POSTGRES_DB=mio_gis_db
 POSTGRES_PORT=5433
 
-# --- MQTT (MOSQUITTO) ---
+# MQTT (MOSQUITTO)
 MQTT_PORT=1883
 
-# --- INFLUXDB ---
+# INFLUXDB
 INFLUX_PORT=8181
 INFLUX_NODE_ID=drone-node
-INFLUX_TOKEN=          # da generare al passo 3, lascia vuoto per ora
+INFLUX_TOKEN=          # da generare al passo 3
 INFLUX_DB=droneDB
 
-# --- BACKEND ---
+# BACKEND
 PORT=3000
 ```
 
-## 3. Avvia i database e genera il token InfluxDB
+## 3. Avvio database e generazione token InfluxDB
 
 Prima build completa dei container:
 
@@ -72,45 +72,45 @@ Al primo avvio:
 - **PostGIS** crea automaticamente il database e la tabella `geofences` (schema in `db/init/postgis_schema.sql`) — nessun intervento manuale necessario.
 - **InfluxDB 3** invece **non genera un token automaticamente** in modo prevedibile: token e database vanno creati manualmente la prima volta.
 
-Entra nel container InfluxDB:
+Entrare nel container InfluxDB:
 
 ```bash
 docker exec -it influx_db bash
 ```
 
-Genera il token admin (il primo token generato è l'**operator token**, chiamato `_admin` — è unico, non recuperabile in seguito, e ti servirà per ogni operazione successiva):
+Generare il token admin (il primo token generato è l'**operator token**, chiamato `_admin` — è unico, non recuperabile in seguito, e servirà per ogni operazione successiva):
 
 ```bash
 influxdb3 create token --admin
 ```
 
-Copia la stringa del token restituita (inizia con `apiv3_...`).
+Copia della stringa del token restituita.
 
-Crea il database (con retention di 30 giorni, sostituisci `TOKEN` con quello appena generato):
+Creazione del database (con retention di 30 giorni, sostituire `TOKEN` con quello appena generato):
 
 ```bash
 influxdb3 create database --retention-period 30d droneDB --token "TOKEN"
 ```
 
-Verifica che sia stato creato correttamente:
+Verificare che sia stato creato correttamente:
 
 ```bash
 influxdb3 show databases --token "TOKEN"
 ```
 
-Esci dal container:
+Uscire dal container:
 
 ```bash
 exit
 ```
 
-Incolla il token nel tuo `.env`:
+Incollare il token nel file `.env` creato poco fa:
 
 ```dotenv
 INFLUX_TOKEN=apiv3_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-Riavvia il backend perché legga il nuovo token:
+Riavvio backend perché legga il nuovo token:
 
 ```bash
 docker compose up -d --build backend
@@ -118,21 +118,21 @@ docker compose up -d --build backend
 
 **Nota**: InfluxDB 3 è "schema-on-write" — non serve creare tabelle/misurazioni in anticipo, vengono generate automaticamente al primo dato scritto (es. dal backend che pubblica GPS/temperatura/umidità). Creare il database esplicitamente con `create database` serve solo per poter impostare fin da subito parametri come la retention.
 
-## 4. Verifica che tutto sia partito correttamente
+## 4. Verificare che tutto sia partito correttamente
 
 ```bash
 docker ps
 ```
 
-Dovresti vedere quattro container in stato "Up": `gis_db`, `mqtt_broker`, `influx_db`, `backend_gis`.
+Ci dovrebbero essere quattro container in stato "Up": `gis_db`, `mqtt_broker`, `influx_db`, `backend_gis`.
 
-Controlla i log del backend:
+Controllo dei log del backend:
 
 ```bash
 docker logs backend_gis
 ```
 
-Dovresti vedere, senza errori:
+Si dovrebbe vedere, senza errori:
 - `WebSocket server avviato su ws://localhost:3001`
 - `Server running on port 3000`
 - `Connesso a Mosquitto: mqtt://mosquitto:1883`
@@ -140,15 +140,15 @@ Dovresti vedere, senza errori:
 - `status:  false` (normale: il drone non è ancora online, non è un errore)
 - le righe `Subscribed a: drone/...` per ciascun topic MQTT (gps, temp, hum, battery, status, gps_status, commands)
 
-Verifica la tabella PostGIS:
+Verifica della creazione della tabella in PostGIS:
 
 ```bash
 docker exec -it gis_db psql -U user_admin -d mio_gis_db -c "\dt"
 ```
 
-Dovresti vedere `geofences` nell'elenco.
+Ci dovrebbe essere `geofences` nell'elenco.
 
-## 5. Avvia il frontend
+## 5. Avvio frontend
 
 ```bash
 cd frontend
@@ -156,9 +156,9 @@ npm install
 npm run dev
 ```
 
-Apri il browser sull'URL mostrato in console da Vite (di norma `http://localhost:5173`).
+Apertura del browser sull'URL mostrato in console da Vite (di norma `http://localhost:5173`).
 
-## 6. (Opzionale) Testa il sistema senza un drone reale
+## 6. (Opzionale) Testing del sistema senza un drone reale
 
 Nella cartella `Fake_Drone_Commands/`:
 
@@ -168,7 +168,7 @@ npm install
 node server.js
 ```
 
-Apri `index.html` nel browser, clicca "Connetti", e usa il joystick per simulare i comandi — la dashboard dovrebbe mostrare il drone muoversi in tempo reale.
+apertura `index.html` nel browser. la dashboard dovrebbe mostrare il drone muoversi in tempo reale.
 
 ## Comandi utili
 
