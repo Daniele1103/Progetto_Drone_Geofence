@@ -42,7 +42,7 @@ services:
       - influxdb
 
   influxdb:
-    image: influxdb:3-core
+    image: influxdb:3.9.2-core
     container_name: influx_db
     restart: unless-stopped
     user: "0:0"

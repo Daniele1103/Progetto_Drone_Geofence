@@ -13,6 +13,14 @@ export const client = new InfluxDBClient({
     database: process.env.INFLUX_DB
 });
 
+client.getServerVersion()
+    .then((version) => {
+        console.log(`Connesso a InfluxDB (versione ${version})`);
+    })
+    .catch((err) => {
+        console.error("Errore connessione InfluxDB:", err.message);
+    });
+
 export function saveGps(data) {
     // il primo elemento è la measurement, dopo il primo separato con la virgola ci sono i tag, dopo si metto per forza uno spazio e iniziano i value/campi (posso anche non mettere i tag)
     const line =
@@ -26,7 +34,7 @@ export function saveGps(data) {
         process.env.INFLUX_DB
     )
         .then(() => {
-            console.log("GPS salvato " + line);
+            //console.log("GPS salvato " + line);
         })
         .catch((err) => {
             console.error(
@@ -50,7 +58,7 @@ export function saveTemperature(data) {
         process.env.INFLUX_DB
     )
         .then(() => {
-            console.log("Temperatura salvata: " + line);
+            //console.log("Temperatura salvata: " + line);
         })
         .catch((err) => {
             console.error(
@@ -74,7 +82,7 @@ export function saveHumidity(data) {
         process.env.INFLUX_DB
     )
         .then(() => {
-            console.log("Umidità salvata " + line);
+            //console.log("Umidità salvata " + line);
         })
         .catch((err) => {
             console.error(

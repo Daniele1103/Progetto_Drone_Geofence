@@ -78,13 +78,13 @@ Entrare nel container InfluxDB:
 docker exec -it influx_db bash
 ```
 
-Generare il token admin (il primo token generato è l'**operator token**, chiamato `_admin` — è unico, non recuperabile in seguito, e servirà per ogni operazione successiva):
+Generare il token admin (il primo token generato è l'**operator token**, chiamato `_admin`, è unico, non recuperabile in seguito, e servirà per ogni operazione successiva):
 
 ```bash
 influxdb3 create token --admin
 ```
 
-Copia della stringa del token restituita.
+Si copia la stringa del token restituita.
 
 Creazione del database (con retention di 30 giorni, sostituire `TOKEN` con quello appena generato):
 
@@ -137,6 +137,7 @@ Si dovrebbe vedere, senza errori:
 - `Server running on port 3000`
 - `Connesso a Mosquitto: mqtt://mosquitto:1883`
 - `Connesso a PostGIS`
+- `Connesso a InfluxDB (versione 3.9.2)`
 - `status:  false` (normale: il drone non è ancora online, non è un errore)
 - le righe `Subscribed a: drone/...` per ciascun topic MQTT (gps, temp, hum, battery, status, gps_status, commands)
 
@@ -168,7 +169,7 @@ npm install
 node server.js
 ```
 
-apertura `index.html` nel browser. la dashboard dovrebbe mostrare il drone muoversi in tempo reale.
+Apertura `index.html` nel browser. La dashboard dovrebbe mostrare il drone muoversi in tempo reale.
 
 ## Comandi utili
 
