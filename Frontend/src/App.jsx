@@ -11,7 +11,7 @@ import axios from "axios";
 
 const Welcome = () => (
   <div className="welcome-container">
-    <h2>Benvenuto nel Gestore Geofence</h2>
+    <h2>Benvenuto in DroneHub</h2>
     <p>Utilizza la barra di navigazione per esplorare le funzionalità.</p>
   </div>
 );

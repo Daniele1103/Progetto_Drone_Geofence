@@ -11,6 +11,7 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
 
   mosquitto:
     image: eclipse-mosquitto:2
@@ -20,8 +21,6 @@ services:
       - "${MQTT_PORT}:1883"
     volumes:
       - ./mosquitto/config:/mosquitto/config
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
 
   influxdb:
     image: influxdb:3-core
@@ -38,6 +37,24 @@ services:
     volumes:
       - influx_data:/var/lib/influxdb3/data
 
+  backend:
+    build: ./backend
+    container_name: backend_gis
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - MQTT_URL=mqtt://mosquitto:1883
+      - INFLUX_URL=http://influxdb:8181
+    depends_on:
+      - db
+      - mosquitto
+      - influxdb
 volumes:
   pgdata:
   influx_data:

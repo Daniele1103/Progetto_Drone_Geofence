@@ -1,126 +1,203 @@
-usa la mia cartella locale
-./mosquitto/config
+# Progetto Drone Geofence
 
-come se fosse
+Sistema di geofencing per drone ESP32 con telemetria in tempo reale, backend Node.js, dashboard React, PostGIS per il calcolo spaziale e InfluxDB per lo storico dei dati.
 
-/mosquitto/config
-dentro il container
+## Struttura del progetto
 
+```
+Progetto_Drone_Geofence/
+├── docker-compose.yml
+├── .env                    # da creare, vedi sotto (NON versionato su Git)
+├── db/
+│   └── init/
+│       └── postgis_schema.sql
+├── mosquitto/
+│   └── config/
+│       └── mosquitto.conf
+├── backend/
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   ├── package.json
+│   └── src/
+├── frontend/
+├── firmware/
+└── Fake_Drone_Commands/    # simulatore drone per test, opzionale
+```
 
-per simulare il drone con esp32 che invia i dati in fase di sviluppo uso fake_drone.js e lo uso come client che pubblica sui topic.
+## Prerequisiti
 
-influxDB appunti:
-https://docs.influxdata.com/influxdb3/core/get-started/setup/
-https://docs.influxdata.com/influxdb3/core/admin/tokens/admin/
-https://docs.influxdata.com/influxdb3/core/admin/databases/
-https://docs.influxdata.com/influxdb3/core/get-started/write/
-https://docs.influxdata.com/influxdb3/core/get-started/query/
+- **Docker Desktop** installato e avviato
+- **Node.js** (v18+) e **npm**, per far girare il frontend (e il simulatore, se lo usi)
 
-LLM INUTILE per documentazione 3.0 core troppo moderna la versione
+## 1. Clona il progetto
 
-per fare setup:
+```bash
+git clone <url-del-repository>
+cd Progetto_Drone_Geofence
+```
+
+## 2. Crea il file `.env`
+
+Il file `.env` non è incluso nel repository (contiene credenziali). Crealo nella cartella principale del progetto con questo contenuto, sostituendo i valori dove indicato:
+
+```dotenv
+# --- POSTGRES / POSTGIS ---
+POSTGRES_USER=user_admin
+POSTGRES_PASSWORD=scegli_una_password
+POSTGRES_DB=mio_gis_db
+POSTGRES_PORT=5433
+
+# --- MQTT (MOSQUITTO) ---
+MQTT_PORT=1883
+
+# --- INFLUXDB ---
+INFLUX_PORT=8181
+INFLUX_NODE_ID=drone-node
+INFLUX_TOKEN=          # da generare al passo 3, lascia vuoto per ora
+INFLUX_DB=droneDB
+
+# --- BACKEND ---
+PORT=3000
+```
+
+## 3. Avvia i database e genera il token InfluxDB
+
+Prima build completa dei container:
+
+```bash
+docker compose up -d --build
+```
+
+Al primo avvio:
+- **PostGIS** crea automaticamente il database e la tabella `geofences` (schema in `db/init/postgis_schema.sql`) — nessun intervento manuale necessario.
+- **InfluxDB 3** invece **non genera un token automaticamente** in modo prevedibile: token e database vanno creati manualmente la prima volta.
+
+Entra nel container InfluxDB:
+
+```bash
 docker exec -it influx_db bash
+```
 
+Genera il token admin (il primo token generato è l'**operator token**, chiamato `_admin` — è unico, non recuperabile in seguito, e ti servirà per ogni operazione successiva):
+
+```bash
 influxdb3 create token --admin
+```
 
-una volta eseguito il comando il token è unico e mi servirà per fare tutto, non potrò recuperarlo, il rpimo token generato è l'operatore del server
+Copia la stringa del token restituita (inizia con `apiv3_...`).
 
-con il comando --token aggiungo il token alla chimata per autorizzarmi per ogni operazione
-influxdb3 show tokens --token
+Crea il database (con retention di 30 giorni, sostituisci `TOKEN` con quello appena generato):
 
-Per rigenerare un token operatore, è necessaria la stringa del token corrente:
-influxdb3 create token --admin \
-  --regenerate \
-  --token OPERATOR_TOKEN
+```bash
+influxdb3 create database --retention-period 30d droneDB --token "TOKEN"
+```
 
-  Token operatore : un token amministrativo generato dal sistema con il nome _admin.
+Verifica che sia stato creato correttamente:
 
-Non può essere modificato o eliminato
-mai cresce
-Non può essere ricreato in caso di smarrimento (funzionalità futura)
-Può essere rigenerato tramite la CLI
-Token amministrativo denominato : Token amministrativi definiti dall'utente con autorizzazioni amministrative complete.
+```bash
+influxdb3 show databases --token "TOKEN"
+```
 
-Può essere creato, modificato ed eliminato
-Date di scadenza del supporto
-Impossibile modificare o rimuovere il token dell'operatore
-Un'istanza di InfluxDB 3 Core può avere un token operatore e un numero illimitato di token amministratori denominati.
+Esci dal container:
 
+```bash
+exit
+```
 
-creo database:
-influxdb3 create database   --retention-period 30d  droneDB  --token ""
+Incolla il token nel tuo `.env`:
 
-vedo database:
-influxdb3 show databases --token
+```dotenv
+INFLUX_TOKEN=apiv3_xxxxxxxxxxxxxxxxxxxxxxxx
+```
 
-SQL vs InfluxQL
-InfluxDB 3 Core supporta due linguaggi di interrogazione: SQL e InfluxQL. Sebbene questi due linguaggi siano simili, presentano importanti differenze da considerare
+Riavvia il backend perché legga il nuovo token:
 
+```bash
+docker compose up -d --build backend
+```
 
+**Nota**: InfluxDB 3 è "schema-on-write" — non serve creare tabelle/misurazioni in anticipo, vengono generate automaticamente al primo dato scritto (es. dal backend che pubblica GPS/temperatura/umidità). Creare il database esplicitamente con `create database` serve solo per poter impostare fin da subito parametri come la retention.
 
-se non creo database:
-InfluxDB 3 Core è progettato per un'elevata velocità di scrittura e utilizza una sintassi di scrittura efficiente e leggibile chiamata protocollo di linea . InfluxDB è un database "schema-on-write", il che significa che è possibile iniziare a scrivere dati e InfluxDB crea automaticamente il database logico, le tabelle e i relativi schemi, senza alcun intervento richiesto. Una volta creato lo schema, InfluxDB convalida le future richieste di scrittura rispetto allo schema prima di accettare nuovi dati. È possibile aggiungere nuovi tag e campi in un secondo momento, man mano che lo schema si modifica.
+## 4. Verifica che tutto sia partito correttamente
 
-Esempio pratico
-Supponiamo di eseguire questo comando senza aver creato nulla in precedenza:
+```bash
+docker ps
+```
 
-influxdb3 write \
-  --database mydb \
-  --token AUTH_TOKEN \
-  'home,room=Kitchen temp=21.0,hum=35.9,co=0i 1641024000'
-InfluxDB creerà automaticamente:
+Dovresti vedere quattro container in stato "Up": `gis_db`, `mqtt_broker`, `influx_db`, `backend_gis`.
 
-Database: mydb
-Tabella: home (il nome prima della virgola nel line protocol)
-Tag column: room (tipo: string dictionary)
-Field columns:
-temp → float64
-hum → float64
-co → int64
-Colonna time: timestamp in nanosecondi
-Il risultato è equivalente ad aver creato manualmente una tabella con questo schema:
+Controlla i log del backend:
 
-influxdb3 create table \
-  --tags room \
-  --fields temp:float64,hum:float64,co:int64 \
-  --database mydb \
-  --token AUTH_TOKEN \
-  home
+```bash
+docker logs backend_gis
+```
 
-se aggiungo in un secondo momento dei nuovi campi verrannoa ggiunti in fondo alla tabella
+Dovresti vedere, senza errori:
+- `WebSocket server avviato su ws://localhost:3001`
+- `Server running on port 3000`
+- `Connesso a Mosquitto: mqtt://mosquitto:1883`
+- `Connesso a PostGIS`
+- `status:  false` (normale: il drone non è ancora online, non è un errore)
+- le righe `Subscribed a: drone/...` per ciascun topic MQTT (gps, temp, hum, battery, status, gps_status, commands)
 
-come li salvo:
-const line =
-    `gps,device=drone1 lat=44.69,lng=10.63,alt=120`;
+Verifica la tabella PostGIS:
 
-| measurement | tag           | fields      | timestamp  |
-| ----------- | ------------- | ----------- | ---------- |
-| gps         | device=drone1 | lat,lng,alt | automatico |
+```bash
+docker exec -it gis_db psql -U user_admin -d mio_gis_db -c "\dt"
+```
 
-per evdere tutti i dati del db:
+Dovresti vedere `geofences` nell'elenco.
 
-  influxdb3 query \
-  --token AUTH_TOKEN \
-  --database DATABASE_NAME \
-  "SELECT * FROM home ORDER BY time"
+## 5. Avvia il frontend
 
-sostituisco DATABASE_NAME con il nome del database e home con il nome della tabella (measurement).
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-per vedere le tabelle disponibili nel db:
-influxdb3 query \
-  --database DATABASE_NAME \
-  --token AUTH_TOKEN \
-  "SHOW TABLES"
+Apri il browser sull'URL mostrato in console da Vite (di norma `http://localhost:5173`).
 
+## 6. (Opzionale) Testa il sistema senza un drone reale
 
-influxdb3 query   --token AUTH_TOKEN --database droneDB   "SELECT * FROM gps  ORDER BY time limit 10"
+Nella cartella `Fake_Drone_Commands/`:
 
-per documentazione node:
-https://www.npmjs.com/package/@influxdata/influxdb3-client?activeTab=readme
+```bash
+cd Fake_Drone_Commands
+npm install
+node server.js
+```
 
+Apri `index.html` nel browser, clicca "Connetti", e usa il joystick per simulare i comandi — la dashboard dovrebbe mostrare il drone muoversi in tempo reale.
 
-influxdb3 delete table \
-  --database DATABASE_NAME \
-  --token AUTH_TOKEN \
-  TABLE_NAME
+## Comandi utili
+
+| Azione | Comando |
+|---|---|
+| Avviare tutto | `docker compose up -d` |
+| Fermare tutto (senza cancellare dati) | `docker compose stop` |
+| Fermare e rimuovere i container (dati intatti) | `docker compose down` |
+| Fermare e cancellare **anche i dati** | `docker compose down -v` |
+| Ricostruire il backend dopo una modifica al codice | `docker compose up -d --build backend` |
+| Vedere i log di un servizio | `docker logs -f <nome_container>` |
+| Entrare nel database Postgres | `docker exec -it gis_db psql -U <utente> -d <database>` |
+
+## Comandi InfluxDB utili per il debug
+
+Da dentro il container (`docker exec -it influx_db bash`):
+
+```bash
+# elenca le tabelle (measurement) presenti nel database
+influxdb3 query --database droneDB --token "TOKEN" "SHOW TABLES"
+
+# vede gli ultimi dati GPS scritti
+influxdb3 query --database droneDB --token "TOKEN" "SELECT * FROM gps ORDER BY time LIMIT 10"
+
+# elenca i token esistenti
+influxdb3 show tokens --token "TOKEN"
+
+# elimina una tabella (measurement)
+influxdb3 delete table --database droneDB --token "TOKEN" NOME_TABELLA
+```
+
 

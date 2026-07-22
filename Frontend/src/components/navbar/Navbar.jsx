@@ -11,7 +11,7 @@ const Navbar = () => {
                 className=" border-bottom rounded"
             >
                 <Container>
-                    <RBNavbar.Brand as={Link} to="/">GeoManager</RBNavbar.Brand>
+                    <RBNavbar.Brand as={Link} to="/">DroneHub</RBNavbar.Brand>
                 
                     <Nav className="me-auto">
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
