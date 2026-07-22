@@ -22,6 +22,8 @@ const TOPICS = [
 ];
 
 let droneGeofenceState = [];
+let predictedEnterState = [];
+let predictedExitState = [];
 export let lastGps = null;
 
 const batteryTable = [3.00, 3.78, 3.83, 3.87, 3.89, 3.92, 3.96, 4.00, 4.04, 4.10];  // fornita dal espdrone
@@ -78,6 +80,8 @@ function handleMessage(topic, data) {
             });
             if (!data.online) {
                 lastGps = null;
+                predictedEnterState = [];
+                predictedExitState = [];
             }
             break;
 
@@ -200,6 +204,12 @@ function handleMessage(topic, data) {
                 type: "gps_status",
                 value: gps_status
             });
+            if (gps_status === 0) {
+                lastGps = null;
+                predictedEnterState = [];
+                predictedExitState = [];
+                broadcast({ type: "predicted_path", points: [] });
+            }
 
             break;
         case "drone/commands":
@@ -208,6 +218,62 @@ function handleMessage(topic, data) {
             const points = computePredictedPoints(lastGps, data);
             broadcast({ type: "predicted_path", points });
             //console.log("punti previsti: ", points)
+
+            if (points.length > 0) {
+                checkGeofences(points[0].lng, points[0].lat)
+                    .then((predictedGeofences) => {
+                        const predictedIds = predictedGeofences.map(g => g.id);
+                        const currentIds = droneGeofenceState.map(g => g.id);
+
+                        const newEnter = predictedGeofences.filter(gf => !currentIds.includes(gf.id));
+                        const newExit = droneGeofenceState.filter(gf => !predictedIds.includes(gf.id));
+
+                        const newEnterIds = newEnter.map(g => g.id);
+                        const newExitIds = newExit.map(g => g.id);
+
+                        for (const gf of newEnter) {
+                            if (!predictedEnterState.some(g => g.id === gf.id)) {
+                                console.log("ABOUT TO ENTER GEOFENCE:", gf.id, gf.name);
+                                broadcast({ type: "geofence_about_to_enter", zone: gf });
+                            }
+                        }
+
+                        for (const gf of predictedEnterState) {
+                            if (!newEnterIds.includes(gf.id)) {
+                                broadcast({ type: "geofence_about_to_enter_clear", zone: gf });
+                            }
+                        }
+
+                        for (const gf of newExit) {
+                            if (!predictedExitState.some(g => g.id === gf.id)) {
+                                console.log("ABOUT TO EXIT GEOFENCE:", gf.id, gf.name);
+                                broadcast({ type: "geofence_about_to_exit", zone: gf });
+                            }
+                        }
+
+                        for (const gf of predictedExitState) {
+                            if (!newExitIds.includes(gf.id)) {
+                                broadcast({ type: "geofence_about_to_exit_clear", zone: gf });
+                            }
+                        }
+
+                        predictedEnterState = newEnter;
+                        predictedExitState = newExit;
+                    })
+                    .catch((err) => {
+                        console.error("Errore predicted geofence check:", err.message);
+                    });
+            } else if (predictedEnterState.length > 0 || predictedExitState.length > 0) {
+
+                for (const gf of predictedEnterState) {
+                    broadcast({ type: "geofence_about_to_enter_clear", zone: gf });
+                }
+                for (const gf of predictedExitState) {
+                    broadcast({ type: "geofence_about_to_exit_clear", zone: gf });
+                }
+                predictedEnterState = [];
+                predictedExitState = [];
+            }
             break;
 
         default:

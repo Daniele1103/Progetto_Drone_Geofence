@@ -61,6 +61,8 @@ const DroneDashboard = () => {
     const [isRetrying, setIsRetrying] = useState(false);
 
     const [activeGeofences, setActiveGeofences] = useState([]);
+    const [predictedEnterGeofences, setPredictedEnterGeofences] = useState([]);
+    const [predictedExitGeofences, setPredictedExitGeofences] = useState([]);
     const lastGpsRef = useRef(null);
     const [gpsFixed, setGpsFixed] = useState(false);
 
@@ -95,23 +97,52 @@ const DroneDashboard = () => {
         features.forEach(feature => {
             const id = feature.get("id");
             const isActive = activeGeofences.some(g => g.id === id);
+            const isAboutToEnter = predictedEnterGeofences.some(g => g.id === id);
+            const isAboutToExit = predictedExitGeofences.some(g => g.id === id);
 
-            feature.setStyle(
-                isActive
-                    ? new Style({
-                        stroke: new Stroke({
-                            color: 'rgba(40, 167, 69, 0.9)',  // #28a745
-                            width: 2.5,
-                            lineDash: [6, 6]
-                        }),
-                        fill: new Fill({
-                            color: 'rgba(40, 167, 69, 0.25)', // #28a745 con trasparenza
-                        }),
-                    })
-                    : null // null = torna allo stile di default del layer
-            );
+            let style = null; // default blu
+
+            if (isActive && isAboutToExit) {
+                // dentro ma sto per uscire -> ambra
+                style = new Style({
+                    stroke: new Stroke({
+                        color: 'rgba(255, 193, 7, 0.9)',
+                        width: 2.5,
+                        lineDash: [3, 5]
+                    }),
+                    fill: new Fill({
+                        color: 'rgba(255, 193, 7, 0.25)',
+                    }),
+                });
+            } else if (isActive) {
+                // dentro, stabile -> verde
+                style = new Style({
+                    stroke: new Stroke({
+                        color: 'rgba(40, 167, 69, 0.9)',  // #28a745
+                        width: 2.5,
+                        lineDash: [6, 6]
+                    }),
+                    fill: new Fill({
+                        color: 'rgba(40, 167, 69, 0.25)', // #28a745 con trasparenza
+                    }),
+                });
+            } else if (isAboutToEnter) {
+                // fuori ma sto per entrare -> rosso
+                style = new Style({
+                    stroke: new Stroke({
+                        color: 'rgba(220, 53, 69, 0.9)',
+                        width: 2.5,
+                        lineDash: [3, 5]
+                    }),
+                    fill: new Fill({
+                        color: 'rgba(220, 53, 69, 0.2)',
+                    }),
+                });
+            }
+
+            feature.setStyle(style);
         });
-    }, [activeGeofences, geofences]);
+    }, [activeGeofences, predictedEnterGeofences, predictedExitGeofences, geofences]);
 
     useEffect(() => {
         axios.get("http://localhost:3000/geofences")
@@ -223,6 +254,8 @@ const DroneDashboard = () => {
                     lastGpsRef.current = null;
                     droneSourceRef.current.clear();
                     droneFeatureRef.current = null;
+                    setPredictedEnterGeofences([]);
+                    setPredictedExitGeofences([]);
 
                     setLogs(prev => [
                         ...prev,
@@ -331,6 +364,42 @@ const DroneDashboard = () => {
                     );
                     break;
 
+                case "geofence_about_to_enter":
+                    setPredictedEnterGeofences(prev => {
+                        if (prev.some(g => g.id === data.zone.id)) return prev;
+                        return [...prev, data.zone];
+                    });
+                    setLogs(prev => [
+                        ...prev,
+                        {
+                            time: new Date().toLocaleTimeString(),
+                            msg: `IN AVVICINAMENTO a geofence: ${data.zone.name}`
+                        }
+                    ].slice(-50));
+                    break;
+
+                case "geofence_about_to_exit":
+                    setPredictedExitGeofences(prev => {
+                        if (prev.some(g => g.id === data.zone.id)) return prev;
+                        return [...prev, data.zone];
+                    });
+                    setLogs(prev => [
+                        ...prev,
+                        {
+                            time: new Date().toLocaleTimeString(),
+                            msg: `IN USCITA prevista da geofence: ${data.zone.name}`
+                        }
+                    ].slice(-50));
+                    break;
+
+                case "geofence_about_to_enter_clear":
+                    setPredictedEnterGeofences(prev => prev.filter(g => g.id !== data.zone.id));
+                    break;
+
+                case "geofence_about_to_exit_clear":
+                    setPredictedExitGeofences(prev => prev.filter(g => g.id !== data.zone.id));
+                    break;
+                    
                 case "gps_status":
                     setGpsFixed(data.value === 1);
 
@@ -383,6 +452,10 @@ const DroneDashboard = () => {
 
                 case "predicted_path":
                     drawPredictedPath(data.points);
+                    if (data.points.length === 0) {
+                        setPredictedEnterGeofences([]);
+                        setPredictedExitGeofences([]);
+                    }
                     break;
 
                 default:
