@@ -21,7 +21,7 @@ Progetto_Drone_Geofence/
 │   └── src/
 ├── frontend/
 ├── firmware/
-└── Fake_Drone_Commands/    # simulatore drone per test, opzionale
+└── Fake_Drone/    # simulatore drone per test, opzionale
 ```
 
 ## Prerequisiti
@@ -161,10 +161,10 @@ Apertura del browser sull'URL mostrato in console da Vite (di norma `http://loca
 
 ## 6. (Opzionale) Testing del sistema senza un drone reale
 
-Nella cartella `Fake_Drone_Commands/`:
+Nella cartella `Fake_Drone/`:
 
 ```bash
-cd Fake_Drone_Commands
+cd Fake_Drone
 npm install
 node server.js
 ```
