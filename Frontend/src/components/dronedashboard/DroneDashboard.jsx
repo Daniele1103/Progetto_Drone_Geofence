@@ -100,10 +100,9 @@ const DroneDashboard = () => {
             const isAboutToEnter = predictedEnterGeofences.some(g => g.id === id);
             const isAboutToExit = predictedExitGeofences.some(g => g.id === id);
 
-            let style = null; // default blu
+            let style = null;
 
             if (isActive && isAboutToExit) {
-                // dentro ma sto per uscire -> ambra
                 style = new Style({
                     stroke: new Stroke({
                         color: 'rgba(255, 193, 7, 0.9)',
@@ -115,19 +114,18 @@ const DroneDashboard = () => {
                     }),
                 });
             } else if (isActive) {
-                // dentro, stabile -> verde
+
                 style = new Style({
                     stroke: new Stroke({
-                        color: 'rgba(40, 167, 69, 0.9)',  // #28a745
+                        color: 'rgba(40, 167, 69, 0.9)',
                         width: 2.5,
                         lineDash: [6, 6]
                     }),
                     fill: new Fill({
-                        color: 'rgba(40, 167, 69, 0.25)', // #28a745 con trasparenza
+                        color: 'rgba(40, 167, 69, 0.25)',
                     }),
                 });
             } else if (isAboutToEnter) {
-                // fuori ma sto per entrare -> rosso
                 style = new Style({
                     stroke: new Stroke({
                         color: 'rgba(220, 53, 69, 0.9)',
@@ -162,7 +160,6 @@ const DroneDashboard = () => {
     useEffect(() => {
         if (!droneConnected) return;
 
-        // evita doppie inita
         if (mapRef.current) return;
 
         mapRef.current = new Map({

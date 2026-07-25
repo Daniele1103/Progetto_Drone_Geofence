@@ -9,10 +9,10 @@ import { broadcast } from "../ws/wsServer.js";
 
 const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";
 
-const client = mqtt.connect(MQTT_URL);       // apre una connessione persistente (socket TCP).    
+const client = mqtt.connect(MQTT_URL);   
 
 const TOPICS = [
-    "drone/gps",                    // mi sottoscrivo ai topic che voglio (nond evono essere registrati), semplicemente riceverò soloq aundo qualcuno pubblicherà su uno di quei topic
+    "drone/gps",                   
     "drone/temp",
     "drone/hum",
     "drone/battery",
@@ -44,7 +44,6 @@ function voltageToPercent(voltage) {
 client.on("connect", () => {
     console.log("Connesso a Mosquitto:", MQTT_URL);
 
-    // sottoscrizione ai topic
     TOPICS.forEach(topic => {
         client.subscribe(topic, (err) => {
             if (err) {

@@ -20,8 +20,9 @@ const GeofenceCard = ({ geofence, onSelect, onDelete, iSselected }) => {
 
                 <button
                     className="btn btn-sm btn-outline-danger"
+                    // impedisce che il click sul bottone attivi anche onSelect
                     onClick={(e) => {
-                        e.stopPropagation();                // impedisce che il click sul bottone attivi anche onSelect
+                        e.stopPropagation();                
                         onDelete();
                     }}
                 >

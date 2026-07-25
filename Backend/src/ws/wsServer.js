@@ -6,7 +6,6 @@ const wss = new WebSocketServer({ port: 3001 });
 
 console.log("WebSocket server avviato su ws://localhost:3001");
 
-// lista client connessi
 const clients = new Set();
 
 let droneOnline = false;
@@ -43,17 +42,14 @@ wss.on("connection", (ws) => {
     });
 });
 
-// ---------------- BROADCAST FUNCTION ----------------
 export function broadcast(data) {
 
     const message = JSON.stringify(data);
 
-    // aggiorna stato interno se arriva status drone
     if (data.type === "status") {
         droneOnline = data.online;
         //console.log("ciao")
 
-        // se drone OFF → notifica subito tutti i client e
         if (!droneOnline) {
             const offlineMsg = JSON.stringify({
                 type: "status",
@@ -69,11 +65,11 @@ export function broadcast(data) {
         }
     }
 
-    if (!droneOnline) return;       //come sicurezza nel caso la varaibile sia false ma il drone continuasse ad andare
+    if (!droneOnline) return;       
 
-    // broadcast normale dati telemetry
+
     for (const client of clients) {
-        if (client.readyState === 1) {      // con 1 connessione attiva
+        if (client.readyState === 1) {
             client.send(message);
             //console.log(message)
         }

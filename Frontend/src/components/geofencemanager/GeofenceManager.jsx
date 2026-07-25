@@ -1,4 +1,3 @@
-//quando uso gli oggetti OL questi iniettano, dentro al contenitore target che gli passo, i canvas e altri tag html e scaricano le immagini e i dati da inserirci dal server (in questo caso OpenStreetMap) e inoltre hanno bisogno del file .css di OL per visualizzare bene quello che viene iniettato
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, ButtonGroup } from 'react-bootstrap';
 import initialGeojson from "../../assets/Geojson.json"
@@ -23,20 +22,18 @@ import Feature from 'ol/Feature';
 import Polygon from 'ol/geom/Polygon';
 
 const GeofenceManager = () => {
-    const mapElement = useRef();    // Il div dove carico la mappa
-    const mapRef = useRef();    // è l'oggetto map vero e proprio (la mappa è pesante, meglio non triggerare ad ogni rirender)
+    const mapElement = useRef();    
+    const mapRef = useRef();    
 
-    // Contiene tutte le geometrie wrappate in feature
-    const savedSourceRef = useRef(new VectorSource());      // In questo modo divido i geofence da quelli che sto disegnando così da evitare di dover cancellare ogni volta che diegno ilr esto per non aggiungere feature inutili al layer
+    const savedSourceRef = useRef(new VectorSource());      
     const drawSourceRef = useRef(new VectorSource());
 
     const [geofences, setGeofences] = useState([]);
 
-    const [drawingPoints, setDrawingPoints] = useState([]); // solo per disegno attivo
+    const [drawingPoints, setDrawingPoints] = useState([]); 
     const [isDrawing, setIsDrawing] = useState(false);
 
-    const isDrawingRef = useRef(false);     // Ne ho bisogno per evitare che non si modifichi lo stato interno al on.map a casua del useEffect che parte solo all'inizio
-    const selectRef = useRef(null);     // diventerà l'oggetto select
+    const isDrawingRef = useRef(false);    
     const [selectedIds, setSelectedIds] = useState([]);
 
     const [geofenceVisible, setGeofenceVisible] = useState(true);
@@ -50,11 +47,10 @@ const GeofenceManager = () => {
                 const data = res.data;
                 //console.log(res.data)
 
-                setGeofences(data);             // Setto i geofence nello stato per averli a portat di mano
+                setGeofences(data);   
+                savedSourceRef.current.clear();
 
-                savedSourceRef.current.clear();         // Per evitare che react monti e smonti il componente all'inizio più volte e che duplichi i geofence disegnati
-
-                data.forEach(addFeatureToMap);          // Disegno subito i geofence
+                data.forEach(addFeatureToMap); 
             })
             .catch((err) => {
                 console.error("Errore fetch geofences:", err);
@@ -66,21 +62,16 @@ const GeofenceManager = () => {
     }, [isDrawing]);
 
     useEffect(() => {
-        //mappa con 2 layer, mappa base e layer per disegnare
         const map = new Map({
             target: mapElement.current,
             layers: [
                 new TileLayer({
                     source: new OSM(),
                 }),
-
-                // geofence salvati
                 new VectorLayer({
                     source: savedSourceRef.current,
                     style: savedStyle
                 }),
-
-                // draw temporaneo
                 new VectorLayer({
                     source: drawSourceRef.current,
                     style: drawStyle
@@ -93,7 +84,7 @@ const GeofenceManager = () => {
         });
 
         const select = new Select({
-            layers: [map.getLayers().getArray()[1]], // solo layer geofence
+            layers: [map.getLayers().getArray()[1]],
             multi: true,
             style: selectStyle
         });
@@ -107,7 +98,7 @@ const GeofenceManager = () => {
 
             const ids = selectedFeatures.map(f => f.get('id'));
 
-            setSelectedIds(ids);            // per selezionare anche la card selezionata
+            setSelectedIds(ids); 
             //console.log(ids)
 
             const feature = selectedFeatures[0];
@@ -125,13 +116,13 @@ const GeofenceManager = () => {
 
         map.addInteraction(select);
 
-        selectRef.current = select;     // mi serve per usare il select quando clicco la card geofence e settare il select 
+        selectRef.current = select;
 
         map.on('click', (evt) => {
 
-            if (!isDrawingRef.current) return; // disegno attivo solo se premuto bottone
+            if (!isDrawingRef.current) return; 
 
-            const coord = toLonLat(evt.coordinate); // trasforma da metri in [lon, lat]
+            const coord = toLonLat(evt.coordinate);
 
             setDrawingPoints(prev => {
                 const updated = [...prev, coord];
@@ -150,11 +141,11 @@ const GeofenceManager = () => {
     // Disegna SOLO preview (non salva)
     const drawPolygon = (coords) => {
 
-        drawSourceRef.current.clear(); // SOLO layer draw
+        drawSourceRef.current.clear(); 
 
         if (coords.length < 2) return;
 
-        const olCoords = coords.map(c => fromLonLat(c));    // Trasforma da [lon, lat] in metri (OL li vuole in metri)
+        const olCoords = coords.map(c => fromLonLat(c));
 
         if (coords.length > 2) {
             olCoords.push(olCoords[0]);
@@ -166,7 +157,7 @@ const GeofenceManager = () => {
             geometry: polygon,
         });
 
-        drawSourceRef.current.addFeature(feature);      // Modifica la mappa ogni volta che modifico il layer
+        drawSourceRef.current.addFeature(feature);      
     };
 
     const addFeatureToMap = (item) => {
@@ -223,7 +214,6 @@ const GeofenceManager = () => {
                     }
                 ]);
 
-                // reset UI
                 setDrawingPoints([]);
                 setIsDrawing(false);
                 drawSourceRef.current.clear();
@@ -268,10 +258,9 @@ const GeofenceManager = () => {
 
             axios.delete(`http://localhost:3000/geofences/${featureId}`)
                 .then((res) => {
-                    // rimuovi dalla mappa
+
                     savedSourceRef.current.removeFeature(feature);
 
-                    // rimuovi dallo stato React
                     setGeofences(prev => prev.filter(g => g.id !== featureId));
 
                     setSelectedIds([])
@@ -283,7 +272,7 @@ const GeofenceManager = () => {
                 });
         });
 
-        // deseleziono le feature selezionate
+
         if (selectRef.current) {
             selectRef.current.getFeatures().clear();
         }
@@ -302,32 +291,18 @@ const GeofenceManager = () => {
 
         if (!feature) return;
 
-        // 2. aggiorni OpenLayers
-        // selectRef è l’istanza di Select di OpenLayers (l’interazione che gestisce la selezione sulla mappa)
-        //
-        // Internamente Select mantiene una "collection" di feature selezionate (getFeatures()).
-        // Quando l’utente clicca sulla mappa, OpenLayers fa hit detection (trova le feature sotto il click)
-        // e aggiorna automaticamente questa collection (aggiungendo o sostituendo le feature selezionate),
-        // attivando anche l’evento "select".
-        //
-        // Quando invece faccio:
-        // selectRef.current.getFeatures().push(feature)
-        //
-        // sto forzando manualmente la selezione della feature, simulando il comportamento del click,
-        // cioè aggiungendola alla lista delle feature selezionate e facendo scattare lo style di selezione.
+        
 
-        const collection = selectRef.current.getFeatures();         // ottengo tutte le feature selezionate, ritorna un oggetto di tipo collection che è una lista di oggetti Feature  (es: Collection<Feature>)
+        const collection = selectRef.current.getFeatures();         
+        collection.clear();
+        collection.push(feature);
 
-        collection.clear();        // deseleziona altri
-        collection.push(feature);  // seleziona questo
+        setSelectedIds([id]);
 
-        setSelectedIds([id]);           // per selezionare anche la card selezionata
-
-        // 3. zoom (più “largo”, simile alla vista iniziale)
         const extent = feature.getGeometry().getExtent();
 
         // espande l'extent per zoom meno ravvicinato
-        const buffer = 200; // metri circa (dipende dal CRS della mappa)
+        const buffer = 200;
         const expandedExtent = [
             extent[0] - buffer,
             extent[1] - buffer,
@@ -338,7 +313,7 @@ const GeofenceManager = () => {
         mapRef.current.getView().fit(expandedExtent, {
             duration: 800,
             padding: [80, 80, 80, 80],
-            maxZoom: 17 // evita zoom troppo vicino
+            maxZoom: 17
         });
 
         console.log("Selezionate: ", collection.getArray())
@@ -346,7 +321,7 @@ const GeofenceManager = () => {
 
     const savedStyle = new Style({
         stroke: new Stroke({
-            color: 'rgba(0, 123, 255, 0.9)', // blu
+            color: 'rgba(0, 123, 255, 0.9)',
             width: 2,
         }),
         fill: new Fill({
@@ -356,7 +331,7 @@ const GeofenceManager = () => {
 
     const drawStyle = new Style({
         stroke: new Stroke({
-            color: 'rgba(255, 193, 7, 1)', // giallo/arancio
+            color: 'rgba(255, 193, 7, 1)',
             width: 2,
             lineDash: [8, 6],
         }),
@@ -615,7 +590,7 @@ const GeofenceManager = () => {
                     transform: rightPanelOpen ? 'translateX(0%)' : 'translateX(100%)',
                     transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                     willChange: 'transform',
-                    overflowY: 'auto',   // <-- aggiunto
+                    overflowY: 'auto',
                 }}
             >
                 <div style={{ marginTop: '20px' }}>

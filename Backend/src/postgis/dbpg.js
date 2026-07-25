@@ -8,6 +8,7 @@ dotenv.config({
 
 const { Pool } = pkg;
 
+//pool.query() usa automaticamente una connessione dal pool, esegue la query e la rilascia subito dopo.
 const pool = new Pool({
     user: process.env.POSTGRES_USER,
     host: process.env.POSTGRES_HOST,
@@ -16,6 +17,7 @@ const pool = new Pool({
     port: process.env.POSTGRES_PORT,
 });
 
+//connessione manuale che va rilasciare con release(), solo per verifica connesione
 pool.connect()
     .then(client => {
         console.log("Connesso a PostGIS");
@@ -24,12 +26,5 @@ pool.connect()
     .catch(err => {
         console.error("Errore connessione DB:", err.message);
     });
-/*
-    pool.query() usa automaticamente una connessione dal pool, esegue la query e la rilascia subito dopo.
-
-    pool.connect() invece ti dà una connessione manuale che devi rilasciare con release() quando hai finito di usarla.
-
-    uso connect solo per verificare connessione, poi userò solo il pool con query
-*/
 
 export default pool;
