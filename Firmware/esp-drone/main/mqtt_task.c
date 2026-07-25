@@ -91,7 +91,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
 
 static void mqtt_app_start(void)
 {
-    // Last Will and Testament: se il drone si disconnette in modo anomalo, il BROKER pubblica lui stesso
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER_URI,
         .session.keepalive = 15,

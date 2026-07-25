@@ -116,7 +116,7 @@ static void parse_gps_sentence(char *sentence)
     }
 
     case MINMEA_SENTENCE_RMC:
-        // ignorato
+    
         break;
 
     default:

@@ -201,4 +201,19 @@ influxdb3 show tokens --token "TOKEN"
 influxdb3 delete table --database droneDB --token "TOKEN" NOME_TABELLA
 ```
 
+## Firmware: build e flash
 
+Per aggiornare il firmware sul drone:
+
+1. Entrare nella cartella del firmware (ESP-Drone)
+2. Buildare il progetto
+3. Collegare il drone via USB (porta seriale, es. COM4)
+4. Flashare il firmware sull'ESP32-S2
+
+### Configurazione da modificare prima del flash
+
+**Wi-Fi (interfaccia station):**
+Nel file di configurazione della rete bisogna sostituire SSID e password con quelli della propria rete locale (l'hotspot/rete dove è in esecuzione il broker Mosquitto), altrimenti il drone non riesce a ottenere un IP sull'interfaccia station e la connessione MQTT non parte mai.
+
+**MQTT (broker):**
+Nel file di configurazione MQTT bisogna sostituire l'IP (e porta, se diversa dal default) del broker Mosquitto con quello della macchina/rete su cui sta girando il container, coerente con la rete Wi-Fi impostata sopra.
